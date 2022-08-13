@@ -1,5 +1,6 @@
 package com.gmail.necnionch.myplugin.simplejigsaw.bukkit;
 
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.commands.MainCommand;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.WorldEditBridge;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -13,6 +14,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+        MainCommand.registerCommand(this);
 
     }
 

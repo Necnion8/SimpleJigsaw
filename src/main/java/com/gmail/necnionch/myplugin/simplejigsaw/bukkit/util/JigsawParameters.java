@@ -2,7 +2,6 @@ package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util;
 
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
 import com.sk89q.jnbt.CompoundTag;
-import com.sk89q.worldedit.world.NbtValued;
 import org.jetbrains.annotations.NotNull;
 
 public record JigsawParameters(

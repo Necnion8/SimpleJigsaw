@@ -10,7 +10,6 @@ import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import com.sk89q.worldedit.session.SessionOwner;
-import com.sk89q.worldedit.world.NbtValued;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
