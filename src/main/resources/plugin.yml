@@ -4,3 +4,8 @@ main: com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin
 api-version: 1.18
 depend: [ WorldEdit ]
 authors: [ Necnion8 ]
+
+commands:
+  simplejigsaw:
+    aliases: [sjigsaw]
+    permission: simplejigsaw.command.simplejigsaw

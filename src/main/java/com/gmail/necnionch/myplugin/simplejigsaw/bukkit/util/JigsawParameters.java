@@ -12,25 +12,25 @@ public record JigsawParameters(
         @NotNull JigsawJointType jointType
 ) {
 
-    public @NotNull String getPool() {
-        return pool;
-    }
-
-    public @NotNull String getName() {
-        return name;
-    }
-
-    public @NotNull String getTargetName() {
-        return targetName;
-    }
-
-    public @NotNull String getFinalBlockState() {
-        return finalBlockState;
-    }
-
-    public @NotNull JigsawJointType getJointType() {
-        return jointType;
-    }
+//    public @NotNull String getPool() {
+//        return pool;
+//    }
+//
+//    public @NotNull String getName() {
+//        return name;
+//    }
+//
+//    public @NotNull String getTargetName() {
+//        return targetName;
+//    }
+//
+//    public @NotNull String getFinalBlockState() {
+//        return finalBlockState;
+//    }
+//
+//    public @NotNull JigsawJointType getJointType() {
+//        return jointType;
+//    }
 
 
     public static JigsawParameters fromNBT(CompoundTag nbt) {
