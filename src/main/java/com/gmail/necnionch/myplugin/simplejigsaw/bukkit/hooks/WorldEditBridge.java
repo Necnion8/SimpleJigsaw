@@ -1,6 +1,19 @@
 package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks;
 
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.JigsawJointType;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.JigsawParameters;
+import com.sk89q.jnbt.CompoundTag;
+import com.sk89q.worldedit.EmptyClipboardException;
+import com.sk89q.worldedit.LocalSession;
+import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.session.SessionOwner;
+import com.sk89q.worldedit.world.NbtValued;
+import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Nullable;
+
 
 public class WorldEditBridge {
 
@@ -11,6 +24,41 @@ public class WorldEditBridge {
     }
 
 
+    // clipboard
+
+    public @Nullable ClipboardHolder getClipboard(Player player) {
+        return getClipboard(BukkitAdapter.adapt(player));
+    }
+
+    public @Nullable ClipboardHolder getClipboard(SessionOwner owner) {
+        LocalSession session = WorldEdit.getInstance().getSessionManager().get(owner);
+        try {
+            return session.getClipboard();
+        } catch (EmptyClipboardException e) {
+            return null;
+        }
+    }
+
+    // jigsaw
+
+    public JigsawParameters getJigsawParametersByNBT(CompoundTag nbt) {
+        // mc1.18/1.19 keys
+        String name = nbt.getString("name");
+        String targetName = nbt.getString("target");
+        String pool = nbt.getString("pool");
+        String finalBlockState = nbt.getString("final_state");
+
+        JigsawJointType jointType = JigsawJointType.UNKNOWN;
+        String rawJoint = nbt.getString("joint");
+        if (rawJoint != null && !rawJoint.isEmpty()) {
+            try {
+                jointType = JigsawJointType.valueOf(rawJoint);
+            } catch (IllegalArgumentException e) {
+                SimpleJigsawPlugin.getLog().warning("Unknown jigsaw joint type: " + rawJoint);
+            }
+        }
+        return new JigsawParameters(pool, name, targetName, finalBlockState, jointType);
+    }
 
 
 
