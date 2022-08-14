@@ -1,25 +1,29 @@
 package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks;
 
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
-import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawParameters;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawPart;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.ExtentIterator;
-import com.sk89q.jnbt.CompoundTag;
+import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.EmptyClipboardException;
 import com.sk89q.worldedit.LocalSession;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extent.InputExtent;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
-import com.sk89q.worldedit.registry.state.Property;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import com.sk89q.worldedit.session.SessionOwner;
-import com.sk89q.worldedit.world.block.BaseBlock;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Locale;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 
 
 public class WorldEditBridge {
@@ -30,6 +34,9 @@ public class WorldEditBridge {
         this.plugin = plugin;
     }
 
+    public EditSession newEditSession(World world) {
+        return WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(world));
+    }
 
     // clipboard
 
@@ -48,48 +55,10 @@ public class WorldEditBridge {
 
     // jigsaw
 
-    public @Nullable JigsawParameters getJigsawParametersByBaseBlock(BaseBlock baseBlock) {
-        CompoundTag nbt = baseBlock.getNbtData();
-        if (nbt == null)
-            return null;
-
-        Property<Object> orientationProperty;
-        try {
-            orientationProperty = baseBlock.getBlockType().getProperty("orientation");
-        } catch (IllegalArgumentException e) {
-            plugin.getLogger().warning("Failed to get block orientation property");
-            return null;
-        }
-        JigsawParameters.Orientation orientation;
-        Object stateValue = baseBlock.getState(orientationProperty);
-        try {
-            if (stateValue == null) {
-                plugin.getLogger().warning("Failed to get block orientation object");
-                return null;
-            }
-            orientation = JigsawParameters.Orientation.valueOf(((String) stateValue).toUpperCase(Locale.ROOT));
-
-        } catch (IllegalArgumentException e) {
-            plugin.getLogger().warning("Unknown jigsaw orientation: " + stateValue);
-            return null;
-        }
-
-        // mc1.18/1.19 keys
-        String name = nbt.getString("name");
-        String targetName = nbt.getString("target");
-        String pool = nbt.getString("pool");
-        String finalBlockState = nbt.getString("final_state");
-
-        JigsawParameters.JointType jointType = JigsawParameters.JointType.UNKNOWN;
-        String rawJoint = nbt.getString("joint");
-        if (rawJoint != null && !rawJoint.isEmpty()) {
-            try {
-                jointType = JigsawParameters.JointType.valueOf(rawJoint.toUpperCase(Locale.ROOT));
-            } catch (IllegalArgumentException e) {
-                plugin.getLogger().warning("Unknown jigsaw joint type: " + rawJoint);
-            }
-        }
-        return new JigsawParameters(pool, name, targetName, finalBlockState, jointType, orientation);
+    public JigsawPart loadJigsawPart(Clipboard clipboard) {
+        JigsawPart part = new JigsawPart(plugin, this, clipboard);
+        part.loadConnectors();
+        return part;
     }
 
     // utils
@@ -100,6 +69,21 @@ public class WorldEditBridge {
 
     public ExtentIterator extentIterator(Clipboard clipboard) {
         return new ExtentIterator(clipboard.getRegion(), clipboard, clipboard.getOrigin());
+    }
+
+    public @Nullable Clipboard loadSchematic(File schemFile) {
+        ClipboardFormat format = ClipboardFormats.findByFile(schemFile);
+        if (format == null)
+            return null;
+
+        try (FileInputStream is = new FileInputStream(schemFile);
+             ClipboardReader reader = format.getReader(is)) {
+            return reader.read();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
 

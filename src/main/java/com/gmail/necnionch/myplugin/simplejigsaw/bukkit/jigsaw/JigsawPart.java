@@ -6,67 +6,144 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.ExtentIterator;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.registry.state.Property;
+import com.sk89q.worldedit.world.block.BaseBlock;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Set;
+import java.util.logging.Logger;
 
 public class JigsawPart {
-    private final WorldEditBridge worldEdit = SimpleJigsawPlugin.getWorldEdit();
+    private final SimpleJigsawPlugin plugin;
+    private final WorldEditBridge worldEdit;
     private final Clipboard clipboard;
-    private final Set<Jigsaw> jigsaws = Sets.newHashSet();
-    private final Multimap<String, Jigsaw> nameOfJigsaws = ArrayListMultimap.create();
-    private final Multimap<String, Jigsaw> targetNameOfJigsaws = ArrayListMultimap.create();
+    private final Set<JigsawConnector> connectors = Sets.newHashSet();
+    private final Multimap<String, JigsawConnector> nameOfConnectors = ArrayListMultimap.create();
+    private final Multimap<String, JigsawConnector> targetNameOfConnectors = ArrayListMultimap.create();
+    private final BlockVector3 origin;
 
 
-    public JigsawPart(Clipboard clipboard) {
+    public JigsawPart(SimpleJigsawPlugin plugin, WorldEditBridge we, Clipboard clipboard) {
+        this.plugin = plugin;
+        this.worldEdit = we;
         this.clipboard = clipboard;
+        this.origin = clipboard.getOrigin();
     }
 
-    public void loadJigsaws() {
+    public void loadConnectors() {
         BlockType blockType = BlockTypes.JIGSAW;
         if (blockType == null)
             return;
 
-        jigsaws.clear();
-        nameOfJigsaws.clear();
-        targetNameOfJigsaws.clear();
+        connectors.clear();
+        nameOfConnectors.clear();
+        targetNameOfConnectors.clear();
 
         for (ExtentIterator it = worldEdit.extentIterator(clipboard); it.hasNext(); ) {
-            ExtentIterator.Block block = it.next();
-            if (!blockType.equals(block.baseBlock().getBlockType()))
+            ExtentIterator.Entry entry = it.next();
+            if (!blockType.equals(entry.baseBlock().getBlockType()))
                 continue;
 
-            JigsawParameters parameters = worldEdit.getJigsawParametersByBaseBlock(block.baseBlock());
-            if (parameters == null)
+            JigsawConnector connector = parseJigsawBlock(entry);
+            if (connector == null)
                 continue;
 
-            Jigsaw jigsaw = new Jigsaw(block.location(), parameters);
-            jigsaws.add(jigsaw);
+            this.connectors.add(connector);
 
-            if (!parameters.getName().isEmpty())
-                nameOfJigsaws.put(parameters.getName(), jigsaw);
+            if (!connector.getName().isEmpty())
+                nameOfConnectors.put(connector.getName(), connector);
 
-            if (!parameters.getTargetName().isEmpty())
-                nameOfJigsaws.put(parameters.getTargetName(), jigsaw);
+            if (!connector.getTargetName().isEmpty())
+                targetNameOfConnectors.put(connector.getTargetName(), connector);
 
         }
 
+    }
+
+    private Logger getLogger() {
+        return plugin.getLogger();
     }
 
     public Clipboard getClipboard() {
         return clipboard;
     }
 
-    public Set<Jigsaw> getJigsaws() {
-        return Collections.unmodifiableSet(jigsaws);
+    public BlockVector3 getOrigin() {
+        return origin;
     }
 
-    public Collection<Jigsaw> getJigsawsByName(String name) {
-        return Collections.unmodifiableCollection(nameOfJigsaws.get(name));
+    public Set<JigsawConnector> getConnectors() {
+        return Collections.unmodifiableSet(connectors);
+    }
+
+    public Collection<JigsawConnector> getJigsawsByName(String name) {
+        return Collections.unmodifiableCollection(nameOfConnectors.get(name));
+    }
+
+    public Collection<JigsawConnector> getJigsawsByTargetName(String targetName) {
+        return Collections.unmodifiableCollection(targetNameOfConnectors.get(targetName));
+    }
+
+
+    private @Nullable JigsawConnector parseJigsawBlock(ExtentIterator.Entry entry) {
+        BaseBlock baseBlock = entry.baseBlock();
+
+        CompoundTag nbt = baseBlock.getNbtData();
+        if (nbt == null)
+            return null;
+
+        Property<Object> orientationProperty;
+        try {
+            orientationProperty = baseBlock.getBlockType().getProperty("orientation");
+        } catch (IllegalArgumentException e) {
+            getLogger().warning("Failed to get block orientation property");
+            return null;
+        }
+        JigsawConnector.Orientation orientation;
+        Object stateValue = baseBlock.getState(orientationProperty);
+        try {
+            if (stateValue == null) {
+                getLogger().warning("Failed to get block orientation object");
+                return null;
+            }
+            orientation = JigsawConnector.Orientation.valueOf(((String) stateValue).toUpperCase(Locale.ROOT));
+
+        } catch (IllegalArgumentException e) {
+            getLogger().warning("Unknown jigsaw orientation: " + stateValue);
+            return null;
+        }
+
+        // mc1.18/1.19 keys
+        String name = nbt.getString("name");
+        String targetName = nbt.getString("target");
+        String pool = nbt.getString("pool");
+        String finalBlockState = nbt.getString("final_state");
+
+        JigsawConnector.JointType jointType = JigsawConnector.JointType.UNKNOWN;
+        String rawJoint = nbt.getString("joint");
+        if (rawJoint != null && !rawJoint.isEmpty()) {
+            try {
+                jointType = JigsawConnector.JointType.valueOf(rawJoint.toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                getLogger().warning("Unknown jigsaw joint type: " + rawJoint);
+            }
+        }
+
+        // relative location
+        BlockVector3 location = BlockVector3.at(
+                getOrigin().getBlockX() - entry.location().getBlockX(),
+                getOrigin().getBlockY() - entry.location().getBlockY(),
+                getOrigin().getBlockZ() - entry.location().getBlockZ()
+        );
+        return new JigsawConnector(location, pool, name, targetName, finalBlockState, jointType, orientation);
     }
 
 }

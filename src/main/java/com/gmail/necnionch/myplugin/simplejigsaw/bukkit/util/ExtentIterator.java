@@ -10,12 +10,13 @@ import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public class ExtentIterator implements Iterator<ExtentIterator.Block> {
+public class ExtentIterator implements Iterator<ExtentIterator.Entry> {
 
     private final InputExtent extent;
     private final Iterator<BlockVector3> blockVectorIterator;
     private final @Nullable BlockVector3 origin;
-    private @Nullable Block nextElement;
+    private @Nullable
+    Entry nextElement;
 
     public ExtentIterator(Region region, InputExtent extent, @Nullable BlockVector3 origin) {
         blockVectorIterator = region.iterator();
@@ -30,10 +31,10 @@ public class ExtentIterator implements Iterator<ExtentIterator.Block> {
     }
 
     @Override
-    public Block next() {
+    public Entry next() {
         if (this.nextElement == null)
             throw new NoSuchElementException();
-        Block elem = this.nextElement;
+        Entry elem = this.nextElement;
         updateNext();
         return elem;
     }
@@ -47,13 +48,13 @@ public class ExtentIterator implements Iterator<ExtentIterator.Block> {
             } else {
                 originLocation = location;
             }
-            nextElement = new Block(originLocation, extent.getFullBlock(location), extent.getBlock(location));
+            nextElement = new Entry(originLocation, extent.getFullBlock(location), extent.getBlock(location));
         } else {
             nextElement = null;
         }
     }
 
 
-    public record Block(BlockVector3 location, BaseBlock baseBlock, BlockState blockState) {}
+    public record Entry(BlockVector3 location, BaseBlock baseBlock, BlockState blockState) {}
 
 }
