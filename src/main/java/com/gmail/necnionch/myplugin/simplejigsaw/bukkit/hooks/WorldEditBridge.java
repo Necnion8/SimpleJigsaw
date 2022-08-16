@@ -13,7 +13,6 @@ import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
-import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import com.sk89q.worldedit.session.SessionOwner;
@@ -36,6 +35,10 @@ public class WorldEditBridge {
 
     public EditSession newEditSession(World world) {
         return WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(world));
+    }
+
+    public EditSession newEditSession(Player player) {
+        return WorldEdit.getInstance().getSessionManager().get(BukkitAdapter.adapt(player)).createEditSession(BukkitAdapter.adapt(player));
     }
 
     // clipboard
@@ -63,12 +66,12 @@ public class WorldEditBridge {
 
     // utils
 
-    public ExtentIterator extentIterator(Region region, InputExtent extent, @Nullable BlockVector3 origin) {
-        return new ExtentIterator(region, extent, origin);
+    public ExtentIterator iterateExtent(Region region, InputExtent extent) {
+        return new ExtentIterator(region, extent);
     }
 
-    public ExtentIterator extentIterator(Clipboard clipboard) {
-        return new ExtentIterator(clipboard.getRegion(), clipboard, clipboard.getOrigin());
+    public ExtentIterator iterateClipboard(Clipboard clipboard) {
+        return new ExtentIterator(clipboard.getRegion(), clipboard);
     }
 
     public @Nullable Clipboard loadSchematic(File schemFile) {

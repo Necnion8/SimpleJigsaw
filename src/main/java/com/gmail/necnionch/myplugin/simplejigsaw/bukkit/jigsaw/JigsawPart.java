@@ -29,13 +29,15 @@ public class JigsawPart {
     private final Multimap<String, JigsawConnector> nameOfConnectors = ArrayListMultimap.create();
     private final Multimap<String, JigsawConnector> targetNameOfConnectors = ArrayListMultimap.create();
     private final BlockVector3 origin;
+    private final BlockVector3 regionMinimumPoint;
 
 
     public JigsawPart(SimpleJigsawPlugin plugin, WorldEditBridge we, Clipboard clipboard) {
         this.plugin = plugin;
         this.worldEdit = we;
         this.clipboard = clipboard;
-        this.origin = clipboard.getOrigin();
+        this.origin = BlockVector3.at(clipboard.getOrigin().getBlockX(), clipboard.getOrigin().getBlockY(), clipboard.getOrigin().getBlockZ());
+        this.regionMinimumPoint = clipboard.getRegion().getMinimumPoint();
     }
 
     public void loadConnectors() {
@@ -47,7 +49,7 @@ public class JigsawPart {
         nameOfConnectors.clear();
         targetNameOfConnectors.clear();
 
-        for (ExtentIterator it = worldEdit.extentIterator(clipboard); it.hasNext(); ) {
+        for (ExtentIterator it = worldEdit.iterateClipboard(clipboard); it.hasNext(); ) {
             ExtentIterator.Entry entry = it.next();
             if (!blockType.equals(entry.baseBlock().getBlockType()))
                 continue;
@@ -76,6 +78,10 @@ public class JigsawPart {
         return clipboard;
     }
 
+    public BlockVector3 getSize() {
+        return clipboard.getRegion().getMaximumPoint().subtract(clipboard.getRegion().getMinimumPoint()).add(1, 1, 1);
+    }
+
     public BlockVector3 getOrigin() {
         return origin;
     }
@@ -90,6 +96,23 @@ public class JigsawPart {
 
     public Collection<JigsawConnector> getJigsawsByTargetName(String targetName) {
         return Collections.unmodifiableCollection(targetNameOfConnectors.get(targetName));
+    }
+
+    public BlockVector3 getRegionMinimumPoint() {
+        return regionMinimumPoint;
+    }
+
+    public BlockVector3 toRelativeLocation(BlockVector3 location) {
+//        return regionMinimumPoint.subtract(location);
+        return location.subtract(origin);
+    }
+
+    public BlockVector3 setClipboardOriginToConnector(JigsawConnector connector) {
+        if (!connectors.contains(connector))
+            throw new IllegalArgumentException("no contains connector");
+
+        clipboard.setOrigin(connector.getOriginalLocation());
+        return connector.getOriginalLocation();
     }
 
 
@@ -137,13 +160,13 @@ public class JigsawPart {
             }
         }
 
-        // relative location
-        BlockVector3 location = BlockVector3.at(
-                getOrigin().getBlockX() - entry.location().getBlockX(),
-                getOrigin().getBlockY() - entry.location().getBlockY(),
-                getOrigin().getBlockZ() - entry.location().getBlockZ()
-        );
-        return new JigsawConnector(location, pool, name, targetName, finalBlockState, jointType, orientation);
+//         relative location
+//        BlockVector3 location = BlockVector3.at(
+//                getOrigin().getBlockX() - entry.location().getBlockX(),
+//                getOrigin().getBlockY() - entry.location().getBlockY(),
+//                getOrigin().getBlockZ() - entry.location().getBlockZ()
+//        );
+        return new JigsawConnector(this, entry.location(), pool, name, targetName, finalBlockState, jointType, orientation);
     }
 
 }

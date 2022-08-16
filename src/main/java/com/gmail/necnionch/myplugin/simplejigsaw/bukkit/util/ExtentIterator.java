@@ -14,14 +14,11 @@ public class ExtentIterator implements Iterator<ExtentIterator.Entry> {
 
     private final InputExtent extent;
     private final Iterator<BlockVector3> blockVectorIterator;
-    private final @Nullable BlockVector3 origin;
-    private @Nullable
-    Entry nextElement;
+    private @Nullable Entry nextElement;
 
-    public ExtentIterator(Region region, InputExtent extent, @Nullable BlockVector3 origin) {
+    public ExtentIterator(Region region, InputExtent extent) {
         blockVectorIterator = region.iterator();
         this.extent = extent;
-        this.origin = origin;
         updateNext();
     }
 
@@ -41,14 +38,8 @@ public class ExtentIterator implements Iterator<ExtentIterator.Entry> {
 
     private void updateNext() {
         if (blockVectorIterator.hasNext()) {
-            BlockVector3 originLocation, location = blockVectorIterator.next();
-
-            if (origin != null) {
-                originLocation = BlockVector3.at(location.getBlockX(), location.getBlockY(), location.getBlockZ()).subtract(origin);
-            } else {
-                originLocation = location;
-            }
-            nextElement = new Entry(originLocation, extent.getFullBlock(location), extent.getBlock(location));
+            BlockVector3 location = blockVectorIterator.next();
+            nextElement = new Entry(location, extent.getFullBlock(location), extent.getBlock(location));
         } else {
             nextElement = null;
         }

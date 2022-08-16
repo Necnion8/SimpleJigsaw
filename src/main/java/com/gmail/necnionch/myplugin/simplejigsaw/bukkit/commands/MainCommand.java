@@ -8,31 +8,27 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.bUtils;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.CommandBukkit;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.CommandSender;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.RootCommand;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimaps;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.function.operation.Operations;
+import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.transform.AffineTransform;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.command.BlockCommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class MainCommand extends RootCommand {
 
@@ -59,18 +55,23 @@ public class MainCommand extends RootCommand {
             return;
         }
 
-        ClipboardHolder clipboardHolder = worldEdit.getClipboard(player);
-        if (clipboardHolder == null) {
-            sendTo(sender, ChatColor.RED + "Empty clipboard");
+//        ClipboardHolder clipboardHolder = worldEdit.getClipboard(player);
+//        if (clipboardHolder == null) {
+//            sendTo(sender, ChatColor.RED + "Empty clipboard");
+//            return;
+//        }
+//
+//        Clipboard clipboard = clipboardHolder.getClipboard();
+        File file = Paths.get("plugins", "WorldEdit", "schematics", "jigsaw.schem").toFile();
+        Clipboard clipboard = worldEdit.loadSchematic(file);
+        if (clipboard == null)
             return;
-        }
-
-        Clipboard clipboard = clipboardHolder.getClipboard();
 
         JigsawPart jigsawPart = worldEdit.loadJigsawPart(clipboard);
         if (jigsawPart != null) {
+            sendTo(sender, "origin: " + jigsawPart.getOrigin());
             for (JigsawConnector connector : jigsawPart.getConnectors()) {
-                sendTo(sender, "Found jigsaw : " + connector.getLocation());
+                sendTo(sender, "Found jigsaw : " + connector.getRelativeLocation() + " " + connector.getOriginalLocation());
                 sendTo(sender, "  pool:   " + connector.getPool());
                 sendTo(sender, "  name:   " + connector.getName());
                 sendTo(sender, "  target: " + connector.getTargetName());
@@ -110,7 +111,7 @@ public class MainCommand extends RootCommand {
         for (JigsawConnector connector : jigsawPart.getConnectors()) {
             Location newLocation = location.clone();
             newLocation = new Location(world, 0, 0, 0);
-            newLocation = newLocation.add(connector.getLocation().getBlockX(), connector.getLocation().getBlockY(), connector.getLocation().getBlockZ());
+            newLocation = newLocation.add(connector.getRelativeLocation().getBlockX(), connector.getRelativeLocation().getBlockY(), connector.getRelativeLocation().getBlockZ());
 //            newLocation.add(jigsaw.getLocation().getBlockX(), jigsaw.getLocation().getBlockY(), jigsaw.getLocation().getBlockZ());
 //            player.teleport(newLocation);
             plugin.getLogger().info("" + newLocation);
@@ -142,7 +143,7 @@ public class MainCommand extends RootCommand {
         for (JigsawConnector connector : jigsawPart.getConnectors()) {
             Location newLocation = location.clone();
 //            newLocation = new Location(world, 0, 0, 0);
-            newLocation = newLocation.add(connector.getLocation().getBlockX(), connector.getLocation().getBlockY(), connector.getLocation().getBlockZ());
+            newLocation = newLocation.add(connector.getRelativeLocation().getBlockX(), connector.getRelativeLocation().getBlockY(), connector.getRelativeLocation().getBlockZ());
 //            newLocation.add(jigsaw.getLocation().getBlockX(), jigsaw.getLocation().getBlockY(), jigsaw.getLocation().getBlockZ());
 //            player.teleport(newLocation);
             plugin.getLogger().info("" + newLocation);
@@ -155,66 +156,131 @@ public class MainCommand extends RootCommand {
         Location location;
         if (sender.getSender() instanceof BlockCommandSender blockSender) {
             location = blockSender.getBlock().getLocation().add(0, 1, 0);
-        } else if (!(sender.getSender() instanceof Player player)) {
+//            return;
+        } else if (sender.getSender() instanceof Player player) {
+            location = player.getLocation();
+        } else {
             sendTo(sender, ChatColor.RED + "プレイヤーのみ実行できるコマンドです");
             return;
-        } else {
-            location = player.getLocation();
         }
 
-        File file = Paths.get("plugins", "WorldEdit", "schematics", "jigsaw.schem").toFile();
-        Clipboard clipboard = worldEdit.loadSchematic(file);
-        if (clipboard == null)
-            return;
 
-        JigsawPart part = worldEdit.loadJigsawPart(clipboard);
-        getLogger().info("Loaded " + part.getConnectors().size() + " size");
+        List<JigsawConnector> jigsaws = Lists.newArrayList();
+        List<JigsawConnector> targetJigsaws = Lists.newArrayList();
 
-        Collection<JigsawConnector> jigsaws = part.getJigsawsByName("minecraft:example1");
-        List<JigsawConnector> targetJigsaws = Lists.newArrayList(part.getJigsawsByTargetName("minecraft:example1"));
+        Stream.of("jigsaw.schem", "jigsaw2.schem").forEachOrdered(name -> {
+            File file = Paths.get("plugins", "WorldEdit", "schematics", name).toFile();
+            Clipboard clipboard = worldEdit.loadSchematic(file);
+            if (clipboard == null)
+                return;
 
+            JigsawPart part = worldEdit.loadJigsawPart(clipboard);
+            getLogger().info("Loaded " + part.getConnectors().size() + " size, from " + name + " of " + part);
+
+            jigsaws.addAll(part.getJigsawsByName("minecraft:example1"));
+            targetJigsaws.addAll(part.getJigsawsByTargetName("minecraft:example1")
+                    .stream()
+                .filter(conn -> conn.getOrientation().isHorizontal())
+                .collect(Collectors.toList()));
+        });
 
         if (targetJigsaws.isEmpty()) {
             getLogger().info("empty target jigsaws");
             return;
         }
 
-
-        ImmutableListMultimap<JigsawConnector.Orientation, JigsawConnector> orientOfTargetJigsaws = Multimaps.index(targetJigsaws, JigsawConnector::getOrientation);
         Random rand = new Random();
 
+        BlockVector3 baseLoc = bUtils.toBlockVector3(location);
+
+        Bukkit.getScheduler().cancelTasks(plugin);
+
         try (EditSession session = worldEdit.newEditSession(location.getWorld())) {
-//            Operations.complete(new ClipboardHolder(clipboard)
-//                    .createPaste(session)
-//                    .to(bUtils.toBlockVector3(location))
-//                    .build());
+//        try (EditSession session = worldEdit.newEditSession(((Player) sender.getSender()))) {
 
+            // select first part
+            JigsawPart firstPart = jigsaws.get(0).getJigsawPart();
+            Clipboard firstPartClipboard = firstPart.getClipboard();
+            ClipboardHolder clipboardHolder = new ClipboardHolder(firstPartClipboard);
+            Operations.complete(clipboardHolder
+                    .createPaste(session)
+                    .to(baseLoc)
+                    .build());
 
-            for (JigsawConnector from : jigsaws) {
-                JigsawConnector.Orientation targetOrient = from.getOrientation().getOpposite();
+            for (JigsawConnector from : firstPart.getConnectors()) {
+                JigsawConnector.Orientation orient = from.getOrientation();
+                getLogger().info("= from ================>");
 
-                ArrayList<JigsawConnector> orients = Lists.newArrayList(orientOfTargetJigsaws.get(targetOrient));
-                orients.remove(from);
-                if (orients.isEmpty())
-                    continue;
+                BlockVector3 fromPos = baseLoc.add(from.getRelativeLocation());
+                showParticle("p", fromPos, location.getWorld(), Color.RED);
 
-                getLogger().info("hit");
+                // 子を召喚
+                JigsawConnector to = targetJigsaws.get(rand.nextInt(targetJigsaws.size()));
+//                JigsawConnector to = targetJigsaws.get(targetJigsaws.size()-2);
+                getLogger().info("To Part: " + to.getJigsawPart());
 
-                JigsawConnector to = orients.get(rand.nextInt(orients.size()));
+                BlockVector3 partSize = to.getJigsawPart().getSize();
 
-                clipboard.setOrigin(from.getLocation());
-                ClipboardHolder clipboardHolder = new ClipboardHolder(clipboard);
-                clipboardHolder.setTransform(new AffineTransform().rotateY(180));  // jigsawの向きが変わらない
+                Clipboard fromClipboard = to.getJigsawPart().getClipboard();
+                fromClipboard.setOrigin(to.getOriginalLocation());
+                clipboardHolder = new ClipboardHolder(fromClipboard);
+//                int rotate = to.getOrientation().rotateAngleTo(orient);
+                int rotate = to.getOrientation().rotateAngleTo(orient.getOpposite());
+                getLogger().info("rotate: " + rotate + ", in: " + orient.getAngle() + " <-> " + to.getOrientation().getAngle() + "?");
+//                if (to.getOrientation().getAngle() == 0 || to.getOrientation().getAngle() == -90) {
+//                    getLogger().info("skip transform " + rotate);
+//                } else {
+                    clipboardHolder.setTransform(new AffineTransform().rotateY(rotate));
+//                }
+
+                BlockVector3 newPos = fromPos;  // = fromPos.add(orient.getX(), 0, orient.getZ());
+//                newPos = loc.add(orient.getX(), 0, orient.getZ());
+//                if (rotate == 0) {
+//                    newPos = fromPos.add(orient.getX(), 0, orient.getZ());
+//                } else {
+//                    newPos = fromPos.add(orient.getX() * partSize.getBlockX(), 0, orient.getZ() * partSize.getBlockZ());
+//                }
+
+//                if (rotate == 180 || rotate == -180) {
+                    newPos = newPos.add(
+                            orient.getX(),  // * partSize.getBlockX(),
+                            0,
+                            orient.getZ()  // * partSize.getBlockZ()
+                    );
+//                }
+
+//                newPos = fromPos.add(
+//                        orient.getX() == -1 ? orient.getX() * partSize.getBlockX() : orient.getX(),
+//                        0,
+//                        orient.getZ() == -1 ? orient.getZ() * partSize.getBlockZ() : orient.getZ()
+//                );
+
+                getLogger().info("size: " + partSize);
+
+                getLogger().info("conn place to " + newPos + ", orientation " + orient);
                 Operations.complete(clipboardHolder
                         .createPaste(session)
-                        .to(bUtils.toBlockVector3(location.add(to.getOrientation().getX(), 0, to.getOrientation().getZ()))) // TODO: edit
+                        .to(newPos)
                         .build()
                 );
+
+                showParticle("i", newPos, location.getWorld(), Color.YELLOW);
+
+//                break;
             }
 
         } catch (WorldEditException e) {
             e.printStackTrace();
         }
+
+    }
+
+    private void showParticle(String name, BlockVector3 loc, World world, Color color) {
+        getLogger().info(name + ": " + loc);
+        Particle.DustOptions dust = new Particle.DustOptions(color, 1);
+        plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+            world.spawnParticle(Particle.REDSTONE, loc.getBlockX() + .5, loc.getBlockY() + 1.5, loc.getBlockZ() + .5, 1, 0, 0, 0, dust);
+        }, 0, 1);
 
     }
 
