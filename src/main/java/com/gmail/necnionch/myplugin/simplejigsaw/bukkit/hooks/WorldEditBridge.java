@@ -58,9 +58,15 @@ public class WorldEditBridge {
 
     // jigsaw
 
-    public JigsawPart loadJigsawPart(Clipboard clipboard) {
+    public JigsawPart createJigsawPartOf(Clipboard clipboard, boolean clearStructures) {
         JigsawPart part = new JigsawPart(plugin, this, clipboard);
-        part.loadConnectors();
+        part.loadConnectors(clearStructures);
+        return part;
+    }
+
+    public JigsawPart createJigsawPartOf(Clipboard clipboard) {
+        JigsawPart part = new JigsawPart(plugin, this, clipboard);
+        part.loadConnectors(true);
         return part;
     }
 

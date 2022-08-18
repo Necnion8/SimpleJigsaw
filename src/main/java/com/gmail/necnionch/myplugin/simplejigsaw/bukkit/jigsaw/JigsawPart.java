@@ -7,12 +7,14 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.sk89q.jnbt.CompoundTag;
+import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.registry.state.Property;
 import com.sk89q.worldedit.world.block.BaseBlock;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
+import org.bukkit.NamespacedKey;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -40,7 +42,7 @@ public class JigsawPart {
         this.regionMinimumPoint = clipboard.getRegion().getMinimumPoint();
     }
 
-    public void loadConnectors() {
+    public void loadConnectors(boolean clearStructures) {
         BlockType blockType = BlockTypes.JIGSAW;
         if (blockType == null)
             return;
@@ -65,6 +67,29 @@ public class JigsawPart {
 
             if (!connector.getTargetName().isEmpty())
                 targetNameOfConnectors.put(connector.getTargetName(), connector);
+
+            if (clearStructures) {
+                String finalBlockState = connector.getFinalBlockState();
+                NamespacedKey namespacedKey = NamespacedKey.fromString(finalBlockState);
+                finalBlockState = (namespacedKey != null) ? namespacedKey.toString() : "minecraft:air";
+
+                BlockType finalBlockType;
+                if (!finalBlockState.equalsIgnoreCase("minecraft:structure_void")) {
+                    finalBlockType = BlockTypes.get(finalBlockState);
+                    if (finalBlockType == null)
+                        finalBlockType = BlockTypes.AIR;
+                } else {
+                    finalBlockType = BlockTypes.STRUCTURE_VOID;
+                }
+
+                if (finalBlockType != null) {
+                    try {
+                        clipboard.setBlock(entry.location(), finalBlockType.getDefaultState());
+                    } catch (WorldEditException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
 
         }
 
