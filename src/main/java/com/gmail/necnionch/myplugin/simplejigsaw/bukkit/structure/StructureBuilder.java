@@ -21,13 +21,10 @@ import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Color;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class StructureBuilder {
 
@@ -35,6 +32,7 @@ public class StructureBuilder {
     private final JigsawPart[] parts;
     private @Nullable JigsawPart firstPart;
     private @Nullable Map<String, List<JigsawConnector>> poolOfConnectors;  // caching
+    private @Nullable Map<String, List<JigsawConnector>> poolOfEndConnectors;  // caching
 
     public StructureBuilder(int maxSize, JigsawPart[] parts) {
         this.maxSize = maxSize;
@@ -45,9 +43,11 @@ public class StructureBuilder {
         return SimpleJigsawPlugin.getLog();
     }
 
-    public Stream<JigsawConnector> filteredConnectors(String pool, String namePrefix) {
+
+    public List<JigsawConnector> getConnectorsByPool(String pool) {
         if (poolOfConnectors == null) {
             poolOfConnectors = Maps.newHashMap();
+
             for (JigsawPart part : parts) {
                 for (JigsawConnector connector : part.getConnectors()) {
                     if (!connector.getPool().isEmpty()) {
@@ -62,13 +62,36 @@ public class StructureBuilder {
         }
 
         if (!poolOfConnectors.containsKey(pool))
-            return Stream.empty();
+            return Collections.emptyList();
 
-        return poolOfConnectors.get(pool)
-                .stream()
-                .filter(conn -> conn.getPool().equals(pool))
-                .filter(conn -> conn.getName().startsWith(namePrefix));
+        return Collections.unmodifiableList(poolOfConnectors.get(pool));
     }
+
+    public List<JigsawConnector> getEndConnectorsByPool(String pool) {
+        if (poolOfEndConnectors == null) {
+            poolOfEndConnectors = Maps.newHashMap();
+
+            for (JigsawPart part : parts) {
+                for (JigsawConnector connector : part.getConnectors()) {
+                    if (!connector.getPool().isEmpty()) {
+                        if (part.getConnectors().size() == 1) {
+                            if (!poolOfEndConnectors.containsKey(connector.getPool())) {
+                                poolOfEndConnectors.put(connector.getPool(), Lists.newArrayList(connector));
+                            } else {
+                                poolOfEndConnectors.get(connector.getPool()).add(connector);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!poolOfEndConnectors.containsKey(pool))
+            return Collections.emptyList();
+
+        return Collections.unmodifiableList(poolOfEndConnectors.get(pool));
+    }
+
 
     public int getMaxSize() {
         return maxSize;
@@ -85,6 +108,10 @@ public class StructureBuilder {
     }
 
     public int build(EditSession session, BlockVector3 position, int angle) throws WorldEditException {
+       return build(session, new Random(), position, angle);
+    }
+
+    public int build(EditSession session, Random random, BlockVector3 position, int angle) throws WorldEditException {
         if (firstPart == null)
             throw new IllegalArgumentException("no selected first part");
 
@@ -104,7 +131,7 @@ public class StructureBuilder {
                 .build()
         );
 
-        return 1 + buildJigsawConnectors(session, firstPart, position, angle, 1);
+        return 1 + buildJigsawConnectors(session, random, firstPart, position, angle, 1);
     }
 
     private int expandJigsawPart(ConnectInstance connect) throws WorldEditException {
@@ -113,9 +140,30 @@ public class StructureBuilder {
         BlockVector3 position = connect.getPosition();  // 接続先に繋がる位置 (つまりここorigin)
 
         // 処理4
-        List<JigsawConnector> targets = filteredConnectors(from.getPool(), from.getTargetName())
-                .filter(conn -> conn.getOrientation().isHorizontal() == orient.isHorizontal())
-                .collect(Collectors.toList());
+        List<JigsawConnector> targets;
+        Predicate<JigsawConnector> connectorsPredicate = conn ->
+                conn.getOrientation().isHorizontal() == orient.isHorizontal()
+                && conn.getName().startsWith(from.getTargetName());
+
+        if (maxSize <= connect.getSize()) {
+            // 最大サイズだった場合は末端パーツ
+            targets = getEndConnectorsByPool(from.getPool())
+                    .stream()
+                    .filter(connectorsPredicate)
+                    .collect(Collectors.toList());
+
+            if (targets.isEmpty())
+                targets = getConnectorsByPool(from.getPool())
+                        .stream()
+                        .filter(connectorsPredicate)
+                        .collect(Collectors.toList());
+
+        } else {
+            targets = getConnectorsByPool(from.getPool())
+                    .stream()
+                    .filter(connectorsPredicate)
+                    .collect(Collectors.toList());
+        }
 
         if (targets.isEmpty()) {
             getLogger().warning("target is not found (pool: " + from.getPool() + ", name: " + from.getName() + ")");
@@ -124,8 +172,7 @@ public class StructureBuilder {
 
         // TODO: ランダム選別から重さ値選別に変える
         // 処理5 - 被らないか調べた上で選択する
-        // TODO: 最大サイズだった場合は、パーツが属するプールの中から優先的に末端パーツを引く
-        JigsawConnector to = targets.get(new Random().nextInt(targets.size()));
+        JigsawConnector to = targets.get(connect.getRandom().nextInt(targets.size()));
 
         // 貼り付ける
         Clipboard clipboard = to.getJigsawPart().setClipboardOriginToConnector(to);
@@ -171,12 +218,24 @@ public class StructureBuilder {
 
             int newAngle = newRotation + ori.getOpposite().getAngle();
 
-            if (ori.getY() >= 1) {  // TODO: JointTypeを考慮する
-                ori = JigsawConnector.Orientation.ofUpAngle(newAngle);  // 角度を変える
-            } else if (ori.getY() <= -1) {
-                ori = JigsawConnector.Orientation.ofDownAngle(newAngle);
-            } else {
+            if (ori.getY() == 0) {
                 ori = JigsawConnector.Orientation.ofFlatAngle(newAngle);
+
+            } else {
+                boolean aligned = JigsawConnector.JointType.ALIGNED.equals(conn.getJointType());
+                if (ori.getY() > 0) {
+                    if (aligned) {
+                        ori = JigsawConnector.Orientation.ofUpAngle(newAngle);  // 角度を変える
+                    } else {
+                        ori = JigsawConnector.Orientation.UP_AXIS[connect.getRandom().nextInt(JigsawConnector.Orientation.UP_AXIS.length)];
+                    }
+                } else {
+                    if (aligned) {
+                        ori = JigsawConnector.Orientation.ofDownAngle(newAngle);
+                    } else {
+                        ori = JigsawConnector.Orientation.DOWN_AXIS[connect.getRandom().nextInt(JigsawConnector.Orientation.DOWN_AXIS.length)];
+                    }
+                }
             }
 
             showParticle(pos, connect.getSession(), Color.BLUE);
@@ -185,7 +244,7 @@ public class StructureBuilder {
         return results;
     }
 
-    private int buildJigsawConnectors(EditSession session, JigsawPart part, BlockVector3 position, int angle, int size) throws WorldEditException {
+    private int buildJigsawConnectors(EditSession session, Random random, JigsawPart part, BlockVector3 position, int angle, int size) throws WorldEditException {
         // 含まれるConnectorを探し、次のパーツのために座標をもとめる
         int results = 0;
 
@@ -209,15 +268,27 @@ public class StructureBuilder {
             // ジグソーの向きから現在の角度より回転角度を計算
             int newAngle = angle + ori.getOpposite().getAngle();
 
-            if (ori.getY() >= 1) {  // TODO: JointType
-                ori = JigsawConnector.Orientation.ofUpAngle(newAngle);  // 角度を変える
-            } else if (ori.getY() <= -1) {
-                ori = JigsawConnector.Orientation.ofDownAngle(newAngle);
-            } else {
+            if (ori.getY() == 0) {
                 ori = JigsawConnector.Orientation.ofFlatAngle(newAngle);
+
+            } else {
+                boolean aligned = JigsawConnector.JointType.ALIGNED.equals(conn.getJointType());
+                if (ori.getY() > 0) {
+                    if (aligned) {
+                        ori = JigsawConnector.Orientation.ofUpAngle(newAngle);  // 角度を変える
+                    } else {
+                        ori = JigsawConnector.Orientation.UP_AXIS[random.nextInt(JigsawConnector.Orientation.UP_AXIS.length)];
+                    }
+                } else {
+                    if (aligned) {
+                        ori = JigsawConnector.Orientation.ofDownAngle(newAngle);
+                    } else {
+                        ori = JigsawConnector.Orientation.DOWN_AXIS[random.nextInt(JigsawConnector.Orientation.DOWN_AXIS.length)];
+                    }
+                }
             }
 
-            results += expandJigsawPart(new ConnectInstance(session, conn, pos, ori, size + 1));
+            results += expandJigsawPart(new ConnectInstance(session, random, conn, pos, ori, size + 1));
 //            break;
         }
         return results;
@@ -246,6 +317,7 @@ public class StructureBuilder {
         private final BlockVector3 position;
         private final JigsawConnector.Orientation oppositeOrientation;
         private final JigsawConnector connector;
+        private final Random random;
 
         public EditSession getSession() {
             return session;
@@ -267,21 +339,27 @@ public class StructureBuilder {
             return size;
         }
 
+        public Random getRandom() {
+            return random;
+        }
+
         public ConnectInstance createNextConnect(JigsawConnector connector, BlockVector3 position, JigsawConnector.Orientation orientation) {
-            return new ConnectInstance(this, connector, position, orientation);
+            return new ConnectInstance(this, random, connector, position, orientation);
         }
 
 
-        public ConnectInstance(ConnectInstance connectInstance, JigsawConnector connector, BlockVector3 position, JigsawConnector.Orientation orientation) {
+        public ConnectInstance(ConnectInstance connectInstance, Random random, JigsawConnector connector, BlockVector3 position, JigsawConnector.Orientation orientation) {
             this.size = connectInstance.size + 1;
             this.session = connectInstance.session;
+            this.random = random;
             this.connector = connector;
             this.position = position;
             this.oppositeOrientation = orientation;
         }
 
-        public ConnectInstance(EditSession session, JigsawConnector connector, BlockVector3 position, JigsawConnector.Orientation orientation, int size) {
+        public ConnectInstance(EditSession session, Random random, JigsawConnector connector, BlockVector3 position, JigsawConnector.Orientation orientation, int size) {
             this.session = session;
+            this.random = random;
             this.connector = connector;
             this.position = position;
             this.oppositeOrientation = orientation;

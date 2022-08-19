@@ -132,6 +132,11 @@ public class MainCommand extends RootCommand {
             return;
         }
 
+        int maxSize = 3;
+        try {
+            maxSize = Integer.parseInt(args.get(0));
+        } catch (IndexOutOfBoundsException | NumberFormatException ignored) {}
+
 
         List<JigsawPart> parts = Lists.newArrayList();
 
@@ -141,7 +146,7 @@ public class MainCommand extends RootCommand {
         entries.add("jigsaw3.schem");  // C4
         entries.add("jigsaw_end.schem");  // C
         entries.add("jigsaw_up.schem");
-//        entries.add("jigsaw_down.schem");
+        entries.add("jigsaw_down.schem");
 
         entries.forEach(name -> {
             File file = Paths.get("plugins", "WorldEdit", "schematics", name).toFile();
@@ -157,12 +162,13 @@ public class MainCommand extends RootCommand {
         });
 
         Bukkit.getScheduler().cancelTasks(plugin);
-        StructureBuilder structure = new StructureBuilder(3, parts.toArray(new JigsawPart[0]));
+        StructureBuilder structure = new StructureBuilder(maxSize, parts.toArray(new JigsawPart[0]));
         structure.setFirstPart(parts.get(0));
 
         try (EditSession session = worldEdit.newEditSession(location.getWorld())) {
+            long processTime = System.currentTimeMillis();
             int generatedParts = structure.build(session, bUtils.toBlockVector3(location), 0);
-            getLogger().info("generated " + generatedParts + " parts");
+            getLogger().info("generated " + generatedParts + " parts " + (System.currentTimeMillis() - processTime) + " ms");
 
         } catch (WorldEditException e) {
             e.printStackTrace();

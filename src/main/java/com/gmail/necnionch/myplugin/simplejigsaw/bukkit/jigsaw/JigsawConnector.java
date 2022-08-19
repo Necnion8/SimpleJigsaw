@@ -78,9 +78,9 @@ public class JigsawConnector {
         UP_EAST(0, 1, 0, -90), UP_NORTH(0, 1, 0, 180), UP_SOUTH(0, 1, 0, 0), UP_WEST(0, 1, 0, 90),
         WEST_UP(-1, 0, 0, 90), EAST_UP(1, 0, 0, -90), NORTH_UP(0, 0, -1, 180), SOUTH_UP(0, 0, 1, 0);
 
-        private final static Orientation[] DOWN_AXIS = { DOWN_SOUTH, DOWN_WEST, DOWN_NORTH, DOWN_EAST };
-        private final static Orientation[] UP_AXIS = { UP_SOUTH, UP_WEST, UP_NORTH, UP_EAST };
-        private final static Orientation[] FLAT_AXIS = { SOUTH_UP, WEST_UP, NORTH_UP, EAST_UP };
+        public final static Orientation[] DOWN_AXIS = { DOWN_SOUTH, DOWN_WEST, DOWN_NORTH, DOWN_EAST };
+        public final static Orientation[] UP_AXIS = { UP_SOUTH, UP_WEST, UP_NORTH, UP_EAST };
+        public final static Orientation[] FLAT_AXIS = { SOUTH_UP, WEST_UP, NORTH_UP, EAST_UP };
 
         private final int x;
         private final int z;
