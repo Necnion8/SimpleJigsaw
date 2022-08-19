@@ -3,8 +3,6 @@ package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.WorldEditBridge;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.ExtentIterator;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.worldedit.WorldEditException;
@@ -17,7 +15,6 @@ import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.NamespacedKey;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Set;
@@ -28,18 +25,14 @@ public class JigsawPart {
     private final WorldEditBridge worldEdit;
     private final Clipboard clipboard;
     private final Set<JigsawConnector> connectors = Sets.newHashSet();
-    private final Multimap<String, JigsawConnector> nameOfConnectors = ArrayListMultimap.create();
-    private final Multimap<String, JigsawConnector> targetNameOfConnectors = ArrayListMultimap.create();
     private final BlockVector3 origin;
-    private final BlockVector3 regionMinimumPoint;
 
 
     public JigsawPart(SimpleJigsawPlugin plugin, WorldEditBridge we, Clipboard clipboard) {
         this.plugin = plugin;
         this.worldEdit = we;
         this.clipboard = clipboard;
-        this.origin = BlockVector3.at(clipboard.getOrigin().getBlockX(), clipboard.getOrigin().getBlockY(), clipboard.getOrigin().getBlockZ());
-        this.regionMinimumPoint = clipboard.getRegion().getMinimumPoint();
+        this.origin = clipboard.getOrigin();
     }
 
     public void loadConnectors(boolean clearStructures) {
@@ -48,8 +41,6 @@ public class JigsawPart {
             return;
 
         connectors.clear();
-        nameOfConnectors.clear();
-        targetNameOfConnectors.clear();
 
         for (ExtentIterator it = worldEdit.iterateClipboard(clipboard); it.hasNext(); ) {
             ExtentIterator.Entry entry = it.next();
@@ -61,12 +52,6 @@ public class JigsawPart {
                 continue;
 
             this.connectors.add(connector);
-
-            if (!connector.getName().isEmpty())
-                nameOfConnectors.put(connector.getName(), connector);
-
-            if (!connector.getTargetName().isEmpty())
-                targetNameOfConnectors.put(connector.getTargetName(), connector);
 
             if (clearStructures) {
                 String finalBlockState = connector.getFinalBlockState();
@@ -107,24 +92,8 @@ public class JigsawPart {
         return clipboard.getRegion().getMaximumPoint().subtract(clipboard.getRegion().getMinimumPoint()).add(1, 1, 1);
     }
 
-    public BlockVector3 getOrigin() {
-        return origin;
-    }
-
     public Set<JigsawConnector> getConnectors() {
         return Collections.unmodifiableSet(connectors);
-    }
-
-    public Collection<JigsawConnector> getJigsawsByName(String name) {
-        return Collections.unmodifiableCollection(nameOfConnectors.get(name));
-    }
-
-    public Collection<JigsawConnector> getJigsawsByTargetName(String targetName) {
-        return Collections.unmodifiableCollection(targetNameOfConnectors.get(targetName));
-    }
-
-    public BlockVector3 getRegionMinimumPoint() {
-        return regionMinimumPoint;
     }
 
     public BlockVector3 toRelativeLocation(BlockVector3 location) {
@@ -132,12 +101,12 @@ public class JigsawPart {
         return location.subtract(origin);
     }
 
-    public BlockVector3 setClipboardOriginToConnector(JigsawConnector connector) {
+    public Clipboard setClipboardOriginToConnector(JigsawConnector connector) {
         if (!connectors.contains(connector))
             throw new IllegalArgumentException("no contains connector");
 
         clipboard.setOrigin(connector.getOriginalLocation());
-        return connector.getOriginalLocation();
+        return clipboard;
     }
 
 

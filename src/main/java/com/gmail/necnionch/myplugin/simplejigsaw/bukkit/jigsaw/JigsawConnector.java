@@ -114,24 +114,6 @@ public class JigsawConnector {
             return BlockVector3.at(x, y, z);
         }
 
-        public int rotateAngleTo(Orientation targetOrientation) {
-            if (!isHorizontal() || !targetOrientation.isHorizontal() || targetOrientation.angle == angle)
-                return 0;
-
-            float yaw = (angle - targetOrientation.angle) % 360F;
-            int dir = Math.round(yaw / 90F) % 4;
-            return dir * 90;
-        }
-
-        public int rotateAngleTo(int angle) {
-            if (!isHorizontal() || angle == this.angle)
-                return 0;
-
-            float yaw = (this.angle - angle) % 360F;
-            int dir = Math.round(yaw / 90F) % 4;
-            return dir * 90;
-        }
-
         public boolean isHorizontal() {
             return x != 0 || z != 0;
         }
