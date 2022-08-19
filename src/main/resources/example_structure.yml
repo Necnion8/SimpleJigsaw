@@ -1,0 +1,16 @@
+
+schematics:
+  start_pool: "pool_a"
+  pools:
+    pool_a:
+      - file: schematic_a1.schem
+        weight: 25
+      - file: schematic_a2.schem
+        weight: 25
+      - file: schematic_a3.schem
+        weight: 50
+    pool_b:
+      - file: schematic_b1.schem
+        weight: 1
+      - file: schematic_b2.schem
+        weight: 1
