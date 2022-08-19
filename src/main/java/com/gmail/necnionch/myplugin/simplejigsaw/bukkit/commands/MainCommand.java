@@ -342,7 +342,8 @@ public class MainCommand extends RootCommand {
                 int rotate = to.getOrientation().rotateAngleTo(orient.getOpposite());
                 getLogger().info("rotate: " + rotate + ", in: " + orient.getAngle() + " <-> " + to.getOrientation().getAngle() + "?");
 
-                clipboardHolder.setTransform(new AffineTransform().rotateY(rotate));
+                if (rotate != 0)
+                    clipboardHolder.setTransform(new AffineTransform().rotateY(rotate));
 
                 BlockVector3 newPos = fromPos.add(orient.getX(), 0, orient.getZ());
 
@@ -389,7 +390,7 @@ public class MainCommand extends RootCommand {
         entries.add("jigsaw3.schem");  // C4
         entries.add("jigsaw_end.schem");  // C
         entries.add("jigsaw_up.schem");
-        entries.add("jigsaw_down.schem");
+//        entries.add("jigsaw_down.schem");
 
         entries.forEach(name -> {
             File file = Paths.get("plugins", "WorldEdit", "schematics", name).toFile();
@@ -479,7 +480,6 @@ public class MainCommand extends RootCommand {
 
         newRotation = newRotation - to.getOrientation().getAngle();
 
-        System.out.println("final rotate: " + newRotation);
         if (newRotation != 0)
             clipboardHolder.setTransform(new AffineTransform().rotateY(-newRotation));
 
@@ -547,53 +547,28 @@ public class MainCommand extends RootCommand {
             BlockVector3 pos = position;
             JigsawConnector.Orientation ori = conn.getOrientation();
 
-            if (ori.isHorizontal()) {
+            // connの相対座標+1
+            BlockVector3 jigsawRel = conn.getRelativeLocation();
+            jigsawRel = jigsawRel.add(conn.getOrientation().toVector());
+            // 回転を適用
+            jigsawRel = bUtils.rotate90(angle, jigsawRel);
 
-                // connの相対座標+1
-                BlockVector3 jigsawRel = conn.getRelativeLocation();
-                jigsawRel = jigsawRel.add(conn.getOrientation().toVector());
-                // 回転を適用
-                jigsawRel = bUtils.rotate90(angle, jigsawRel);
+            showParticle(pos.add(bUtils.rotate90(angle, conn.getRelativeLocation())), session, Color.RED);
 
-                showParticle(pos.add(bUtils.rotate90(angle, conn.getRelativeLocation())), session, Color.RED);
+            // 現在の位置に足す
+            pos = pos.add(jigsawRel);  // .transform2D(angle, 0, 0, 0, 0));
+            showParticle(pos, session, Color.ORANGE);
 
-                // 現在の位置に足す
-                pos = pos.add(jigsawRel);  // .transform2D(angle, 0, 0, 0, 0));
-                showParticle(pos, session, Color.ORANGE);
+            // ジグソーの向きから現在の角度より回転角度を計算
+            int newAngle = angle + ori.getOpposite().getAngle();
 
-                // ジグソーの向きから現在の角度より回転角度を計算
-                int newAngle = angle + ori.getOpposite().getAngle();
-                ori = JigsawConnector.Orientation.ofFlatAngle(newAngle);  // .getOpposite();
-
+            if (ori.getY() >= 1) {  // TODO: JointType
+                ori = JigsawConnector.Orientation.ofUpAngle(newAngle);  // 角度を変える
+            } else if (ori.getY() <= -1) {
+                ori = JigsawConnector.Orientation.ofDownAngle(newAngle);
             } else {
-                // TODO: 上下方向だった場合、JointTypeを考慮する。配置位置も変わる
-//                throw new IllegalArgumentException("not Implemented");
-                // connの相対座標+1
-                BlockVector3 jigsawRel = conn.getRelativeLocation();
-                jigsawRel = jigsawRel.add(conn.getOrientation().toVector());
-                // 回転を適用
-                jigsawRel = bUtils.rotate90(angle, jigsawRel);
-
-                showParticle(pos.add(bUtils.rotate90(angle, conn.getRelativeLocation())), session, Color.RED);
-
-                // 現在の位置に足す
-                pos = pos.add(jigsawRel);  // .transform2D(angle, 0, 0, 0, 0));
-                showParticle(pos, session, Color.ORANGE);
-
-                // ジグソーの向きから現在の角度より回転角度を計算
-                int newAngle = angle + ori.getOpposite().getAngle();
                 ori = JigsawConnector.Orientation.ofFlatAngle(newAngle);  // .getOpposite();
-
-                if (ori.getY() >= 1) {
-                    ori = JigsawConnector.Orientation.ofUpAngle(newAngle);  // 角度を変える
-                } else if (ori.getY() <= -1) {
-                    ori = JigsawConnector.Orientation.ofDownAngle(newAngle);
-                } else {
-                    throw new IllegalArgumentException("program error -> y == 0 : " + ori);
-                }
-
             }
-
 
 //            results += expandJigsawPart(connect.createNextConnect(conn, pos, ori));
             results += expandJigsawPart(new ConnectInstance(structure, session, conn, pos, ori, size + 1));
@@ -647,9 +622,8 @@ public class MainCommand extends RootCommand {
             Clipboard clipboard = firstPart.getClipboard();
             ClipboardHolder clipboardHolder = new ClipboardHolder(clipboard);
 
-            if (angle != 0) {
-                clipboardHolder.setTransform(new AffineTransform().rotateY(-angle));  // TODO: なぜか逆回転?
-            }
+            if (angle != 0)
+                clipboardHolder.setTransform(new AffineTransform().rotateY(-angle));
 
             Operations.complete(clipboardHolder
                     .createPaste(session)
