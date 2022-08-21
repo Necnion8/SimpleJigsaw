@@ -171,7 +171,7 @@ public class StructureBuilder {
         }
 
         // TODO: ランダム選別から重さ値選別に変える
-        // 処理5 - 被らないか調べた上で選択する
+        // 処理5 - TODO: 被らないか調べた上で選択する
         JigsawConnector to = targets.get(connect.getRandom().nextInt(targets.size()));
 
         // 貼り付ける

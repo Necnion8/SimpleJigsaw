@@ -1,4 +1,4 @@
-package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config;
+package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;

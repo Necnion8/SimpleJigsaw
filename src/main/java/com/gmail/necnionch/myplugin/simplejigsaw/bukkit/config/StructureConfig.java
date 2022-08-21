@@ -1,5 +1,6 @@
 package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config;
 
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.Structure;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.BukkitConfigDriver;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -21,6 +22,10 @@ public class StructureConfig extends BukkitConfigDriver {
 
     public void setStructure(@NotNull Structure structure) {
         this.structure = structure;
+    }
+
+    public String getName() {
+        return name;
     }
 
     @Override

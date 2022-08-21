@@ -2,6 +2,7 @@ package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw;
 
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.WorldEditBridge;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.Structure;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.ExtentIterator;
 import com.google.common.collect.Sets;
 import com.sk89q.jnbt.CompoundTag;
@@ -26,10 +27,12 @@ public class JigsawPart {
     private final Clipboard clipboard;
     private final Set<JigsawConnector> connectors = Sets.newHashSet();
     private final BlockVector3 origin;
+    private final Structure structure;
 
 
-    public JigsawPart(SimpleJigsawPlugin plugin, WorldEditBridge we, Clipboard clipboard) {
+    public JigsawPart(SimpleJigsawPlugin plugin, Structure structure, WorldEditBridge we, Clipboard clipboard) {
         this.plugin = plugin;
+        this.structure = structure;
         this.worldEdit = we;
         this.clipboard = clipboard;
         this.origin = clipboard.getOrigin();
@@ -86,6 +89,10 @@ public class JigsawPart {
 
     public Clipboard getClipboard() {
         return clipboard;
+    }
+
+    public Structure getStructure() {
+        return structure;
     }
 
     public BlockVector3 getSize() {

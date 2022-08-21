@@ -2,6 +2,7 @@ package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks;
 
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawPart;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.Structure;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.ExtentIterator;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.EmptyClipboardException;
@@ -58,14 +59,14 @@ public class WorldEditBridge {
 
     // jigsaw
 
-    public JigsawPart createJigsawPartOf(Clipboard clipboard, boolean clearStructures) {
-        JigsawPart part = new JigsawPart(plugin, this, clipboard);
+    public JigsawPart createJigsawPartOf(Structure structure, Clipboard clipboard, boolean clearStructures) {
+        JigsawPart part = new JigsawPart(plugin, structure, this, clipboard);
         part.loadConnectors(clearStructures);
         return part;
     }
 
-    public JigsawPart createJigsawPartOf(Clipboard clipboard) {
-        JigsawPart part = new JigsawPart(plugin, this, clipboard);
+    public JigsawPart createJigsawPartOf(Structure structure, Clipboard clipboard) {
+        JigsawPart part = new JigsawPart(plugin, structure, this, clipboard);
         part.loadConnectors(true);
         return part;
     }
