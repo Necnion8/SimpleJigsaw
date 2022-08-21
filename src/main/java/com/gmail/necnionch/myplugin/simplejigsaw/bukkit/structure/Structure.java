@@ -49,17 +49,20 @@ public class Structure {
         SchematicPool startPool = null;
         Map<String, SchematicPool> pools = Maps.newHashMap();
 
-        for (String poolName : schematics.getKeys(false)) {
-            List<SchematicPool.Entry> schematicEntries = Lists.newArrayList();
-            schematics.getMapList("pools." + poolName).forEach(data -> {
-                SchematicPool.Entry entry = SchematicPool.Entry.deserialize(data);
-                if (entry != null)
-                    schematicEntries.add(entry);
-            });
-            SchematicPool pool = new SchematicPool(poolName, schematicEntries);
-            pools.put(poolName, pool);
-            if (poolName.equalsIgnoreCase(startPoolName))
-                startPool = pool;
+        ConfigurationSection poolsSection = schematics.getConfigurationSection("pools");
+        if (poolsSection != null) {
+            for (String poolName : poolsSection.getKeys(false)) {
+                List<SchematicPool.Entry> schematicEntries = Lists.newArrayList();
+                poolsSection.getMapList(poolName).forEach(data -> {
+                    SchematicPool.Entry entry = SchematicPool.Entry.deserialize(data);
+                    if (entry != null)
+                        schematicEntries.add(entry);
+                });
+                SchematicPool pool = new SchematicPool(poolName, schematicEntries);
+                pools.put(poolName, pool);
+                if (poolName.equalsIgnoreCase(startPoolName))
+                    startPool = pool;
+            }
         }
 
         return new Structure(name, pools, startPool);

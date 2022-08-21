@@ -2,13 +2,23 @@ package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.commands;
 
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.WorldEditBridge;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.Structure;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.StructureBuilder;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.bUtils;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.CommandBukkit;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.CommandSender;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.RootCommand;
-import com.google.common.collect.Lists;
+import com.sk89q.worldedit.EditSession;
+import com.sk89q.worldedit.WorldEditException;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Location;
+import org.bukkit.command.BlockCommandSender;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -17,14 +27,12 @@ public class MainCommand extends RootCommand {
     private final SimpleJigsawPlugin plugin;
     private final WorldEditBridge worldEdit;
 
-    private final List<String> schematicFiles = Lists.newArrayList();
-
 
     public MainCommand(SimpleJigsawPlugin plugin) {
         this.plugin = plugin;
         worldEdit = SimpleJigsawPlugin.getWorldEdit();
 
-//        addCommand("testcb2", null, this::cmdTestCommandBlock2);
+        addCommand("testbuild", null, this::cmdTestBuild, this::completeTestBuild);
     }
 
     private Logger getLogger() {
@@ -86,6 +94,58 @@ public class MainCommand extends RootCommand {
 //        }
 //
 //    }
+
+    private void cmdTestBuild(CommandSender sender, List<String> args) {
+        Location location;
+        if (sender.getSender() instanceof BlockCommandSender blockSender) {
+            location = blockSender.getBlock().getLocation().add(0, 1, 0);
+        } else if (sender.getSender() instanceof Player player) {
+            location = player.getLocation();
+        } else {
+            sendTo(sender, ChatColor.RED + "プレイヤーのみ実行できるコマンドです");
+            return;
+        }
+
+        String structureName;
+        try {
+            structureName = args.remove(0);
+        } catch (IndexOutOfBoundsException e) {
+            sendTo(sender, ChatColor.RED + "ストラクチャ名を指定してください");
+            return;
+        }
+
+        Structure structure = plugin.getStructureByName(structureName);
+        if (structure == null) {
+            sendTo(sender, ChatColor.RED + "ストラクチャ " + structureName + " はロードされていません");
+            return;
+        }
+
+        int maxSize = 3;
+        try {
+            maxSize = Integer.parseInt(args.remove(0));
+        } catch (IndexOutOfBoundsException | NumberFormatException ignored) {
+        }
+
+        StructureBuilder builder = plugin.createStructureBuilder(structure, maxSize, false);
+
+        try (EditSession session = worldEdit.newEditSession(location.getWorld())) {
+            long processTime = System.currentTimeMillis();
+            int generatedParts = builder.build(session, bUtils.toBlockVector3(location), 0);
+            getLogger().info("Generated " + structureName + " structure (" + generatedParts + " parts, " + (System.currentTimeMillis() - processTime) + " ms)");
+            sendTo(sender, ChatColor.GOLD + "ストラクチャから " + generatedParts + " パーツを生成しました " + ChatColor.GRAY + "(" + (System.currentTimeMillis() - processTime) + " ms)");
+
+        } catch (WorldEditException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private @NotNull List<String> completeTestBuild(CommandSender sender, String label, List<String> args) {
+        if (args.size() == 1) {
+            return generateSuggests(args.get(0), plugin.getStructures().keySet().toArray(new String[0]));
+        }
+        return Collections.emptyList();
+    }
 
 
     public static MainCommand registerCommand(SimpleJigsawPlugin plugin) {

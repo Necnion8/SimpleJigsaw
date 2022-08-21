@@ -18,7 +18,17 @@ public class StructureConfigLoader {
     public void loadAll(SimpleJigsawPlugin plugin) {
         configList.clear();
 
-        File[] files = new File(plugin.getDataFolder(), "structures").listFiles((dir, name) -> name.endsWith(".yml"));
+        File directory = new File(plugin.getDataFolder(), "structures");
+        boolean copyExample = !directory.exists();
+        //noinspection ResultOfMethodCallIgnored
+        directory.mkdirs();
+
+        if (copyExample) {
+            StructureConfig example = new StructureConfig(plugin, "structures/example.yml", "example");
+            example.load();  // load defaults and save
+        }
+
+        File[] files = directory.listFiles((dir, name) -> name.endsWith(".yml"));
         if (files == null)
             return;
 

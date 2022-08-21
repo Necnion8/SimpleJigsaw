@@ -29,20 +29,29 @@ import java.util.stream.Collectors;
 public class StructureBuilder {
 
     private final int maxSize;
+    private final Map<String, List<JigsawPart>> partsOfPool;
+    private final Structure structure;
     private final JigsawPart[] parts;
     private @Nullable JigsawPart firstPart;
     private @Nullable Map<String, List<JigsawConnector>> poolOfConnectors;  // caching
     private @Nullable Map<String, List<JigsawConnector>> poolOfEndConnectors;  // caching
 
-    public StructureBuilder(int maxSize, JigsawPart[] parts) {
+    public StructureBuilder(Structure structure, int maxSize, Map<String, List<JigsawPart>> partsOfPool) {
+        this.structure = structure;
         this.maxSize = maxSize;
-        this.parts = parts;
+        this.partsOfPool = partsOfPool;
+        this.parts = partsOfPool.values().stream()
+                .flatMap(Collection::stream)
+                .toArray(JigsawPart[]::new);
     }
 
     private Logger getLogger() {
         return SimpleJigsawPlugin.getLog();
     }
 
+    public Structure getStructure() {
+        return structure;
+    }
 
     public List<JigsawConnector> getConnectorsByPool(String pool) {
         if (poolOfConnectors == null) {
@@ -107,11 +116,26 @@ public class StructureBuilder {
         return firstPart;
     }
 
+    public @Nullable JigsawPart getRandomPartFromStartPool() {
+        SchematicPool pool = structure.getStartPool();
+        if (pool == null)
+            return null;
+
+        String poolName = pool.getName();
+        List<JigsawPart> parts = partsOfPool.get(poolName);
+        if (parts.isEmpty())
+            return null;
+
+        return parts.get(new Random().nextInt(parts.size()));
+    }
+
     public int build(EditSession session, BlockVector3 position, int angle) throws WorldEditException {
        return build(session, new Random(), position, angle);
     }
 
     public int build(EditSession session, Random random, BlockVector3 position, int angle) throws WorldEditException {
+        if (firstPart == null)
+            firstPart = getRandomPartFromStartPool();
         if (firstPart == null)
             throw new IllegalArgumentException("no selected first part");
 
