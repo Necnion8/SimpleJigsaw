@@ -76,7 +76,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
                     getLogger().warning("Failed to load " + schematicFile + " file");
                     return;
                 }
-                JigsawPart part = worldEditBridge.createJigsawPartOf(structure, clipboard, clearStructures);
+                JigsawPart part = worldEditBridge.createJigsawPartOf(structure, schematic, clipboard, clearStructures);
                 if (partsOfPool.containsKey(poolName)) {
                     partsOfPool.get(poolName).add(part);
                 } else {

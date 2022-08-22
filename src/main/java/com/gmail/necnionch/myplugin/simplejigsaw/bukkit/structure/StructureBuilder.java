@@ -6,6 +6,7 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawPart;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.bUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.extent.Extent;
@@ -35,6 +36,7 @@ public class StructureBuilder {
     private @Nullable JigsawPart firstPart;
     private @Nullable Map<String, List<JigsawConnector>> poolOfConnectors;  // caching
     private @Nullable Map<String, List<JigsawConnector>> poolOfEndConnectors;  // caching
+    private final Set<String> structuredBlockLocations = Sets.newHashSet();
 
     public StructureBuilder(Structure structure, int maxSize, Map<String, List<JigsawPart>> partsOfPool) {
         this.structure = structure;
@@ -142,6 +144,7 @@ public class StructureBuilder {
         if (maxSize <= 0)
             return 0;
 
+        structuredBlockLocations.clear();
         Clipboard clipboard = firstPart.getClipboard();
         ClipboardHolder clipboardHolder = new ClipboardHolder(clipboard);
 
@@ -158,45 +161,14 @@ public class StructureBuilder {
         return 1 + buildJigsawConnectors(session, random, firstPart, position, angle, 1);
     }
 
+
     private int expandJigsawPart(ConnectInstance connect) throws WorldEditException {
-        JigsawConnector from = connect.getConnector();  // 接続先
         JigsawConnector.Orientation orient = connect.getOppositeOrientation();  // 接続先に繋がる向き
         BlockVector3 position = connect.getPosition();  // 接続先に繋がる位置 (つまりここorigin)
 
-        // 処理4
-        List<JigsawConnector> targets;
-        Predicate<JigsawConnector> connectorsPredicate = conn ->
-                conn.getOrientation().isHorizontal() == orient.isHorizontal()
-                && conn.getName().startsWith(from.getTargetName());
-
-        if (maxSize <= connect.getSize()) {
-            // 最大サイズだった場合は末端パーツ
-            targets = getEndConnectorsByPool(from.getPool())
-                    .stream()
-                    .filter(connectorsPredicate)
-                    .collect(Collectors.toList());
-
-            if (targets.isEmpty())
-                targets = getConnectorsByPool(from.getPool())
-                        .stream()
-                        .filter(connectorsPredicate)
-                        .collect(Collectors.toList());
-
-        } else {
-            targets = getConnectorsByPool(from.getPool())
-                    .stream()
-                    .filter(connectorsPredicate)
-                    .collect(Collectors.toList());
-        }
-
-        if (targets.isEmpty()) {
-            getLogger().warning("target is not found (pool: " + from.getPool() + ", name: " + from.getName() + ")");
+        JigsawConnector to = selectConnector(connect);
+        if (to == null)
             return 0;
-        }
-
-        // TODO: ランダム選別から重さ値選別に変える
-        // 処理5 - TODO: 被らないか調べた上で選択する
-        JigsawConnector to = targets.get(connect.getRandom().nextInt(targets.size()));
 
         // 貼り付ける
         Clipboard clipboard = to.getJigsawPart().setClipboardOriginToConnector(to);
@@ -323,6 +295,61 @@ public class StructureBuilder {
         return new BlockTypeMask(extent, BlockType.REGISTRY.values().stream()
                 .filter(bType -> !bType.equals(BlockTypes.STRUCTURE_VOID))
                 .collect(Collectors.toSet()));
+    }
+
+    private @Nullable JigsawConnector selectConnector(ConnectInstance connect) {
+        JigsawConnector from = connect.getConnector();
+        List<JigsawConnector> targets;
+        Predicate<JigsawConnector> connectorsPredicate = conn ->
+                conn.getOrientation().isHorizontal() == connect.getOppositeOrientation().isHorizontal()
+                        && conn.getName().startsWith(from.getTargetName());
+
+        if (maxSize <= connect.getSize()) {
+            // 最大サイズだった場合は末端パーツ
+            targets = getEndConnectorsByPool(from.getPool())
+                    .stream()
+                    .filter(connectorsPredicate)
+                    .collect(Collectors.toList());
+
+            if (targets.isEmpty())
+                targets = getConnectorsByPool(from.getPool())
+                        .stream()
+                        .filter(connectorsPredicate)
+                        .collect(Collectors.toList());
+
+        } else {
+            targets = getConnectorsByPool(from.getPool())
+                    .stream()
+                    .filter(connectorsPredicate)
+                    .collect(Collectors.toList());
+        }
+
+        if (targets.isEmpty()) {
+            getLogger().warning("target is not found (pool: " + from.getPool() + ", name: " + from.getName() + ")");
+            return null;
+        }
+
+        // 重さ値選別に選別
+        int totalWeight = targets.stream()
+                .mapToInt(conn -> conn.getJigsawPart().getPoolEntry().getWeight())
+                .sum();
+        int selectWeight = connect.getRandom().nextInt(totalWeight);
+        int tmpWeight = 0;
+        JigsawConnector to = null;
+        for (JigsawConnector target : targets) {
+            tmpWeight += target.getJigsawPart().getPoolEntry().getWeight();
+            if (selectWeight <= tmpWeight) {
+                to = target;
+                break;
+            }
+        }
+
+        if (to == null)
+            throw new IllegalStateException("program error");
+
+//         TODO: 被らないか調べた上で選択する
+//        JigsawConnector to = targets.get(connect.getRandom().nextInt(targets.size()));
+        return to;
     }
 
     private void showParticle(BlockVector3 loc, EditSession session, Color color) {
