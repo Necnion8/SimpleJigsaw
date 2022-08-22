@@ -38,6 +38,10 @@ public class StructureBuilder {
     private @Nullable Map<String, List<JigsawConnector>> poolOfEndConnectors;  // caching
     private final Set<String> structuredBlockLocations = Sets.newHashSet();
 
+    private final Set<BlockType> whitelistBlockTypes = BlockType.REGISTRY.values().stream()
+            .filter(bType -> !bType.equals(BlockTypes.STRUCTURE_VOID))
+            .collect(Collectors.toSet());
+
     public StructureBuilder(Structure structure, int maxSize, Map<String, List<JigsawPart>> partsOfPool) {
         this.structure = structure;
         this.maxSize = maxSize;
@@ -158,6 +162,9 @@ public class StructureBuilder {
                 .build()
         );
 
+        ConflictTestResult test = testConflictBlocks(firstPart, position, firstPart.toRelativeLocation(clipboard.getOrigin()), angle);
+        structuredBlockLocations.addAll(test.locationNames);
+
         return 1 + buildJigsawConnectors(session, random, firstPart, position, angle, 1);
     }
 
@@ -186,6 +193,7 @@ public class StructureBuilder {
                 .maskSource(createNonReplaceMaskStructureVoid(clipboard))
                 .build()
         );
+//        markStructured(to.getJigsawPart(), position, to.getJigsawPart().toRelativeLocation(clipboard.getOrigin()), newRotation, Color.YELLOW);
 
         // 最大サイズなら終了
         if (maxSize <= connect.getSize())
@@ -292,9 +300,7 @@ public class StructureBuilder {
     }
 
     private Mask createNonReplaceMaskStructureVoid(Extent extent) {
-        return new BlockTypeMask(extent, BlockType.REGISTRY.values().stream()
-                .filter(bType -> !bType.equals(BlockTypes.STRUCTURE_VOID))
-                .collect(Collectors.toSet()));
+        return new BlockTypeMask(extent, whitelistBlockTypes);
     }
 
     private @Nullable JigsawConnector selectConnector(ConnectInstance connect) {
@@ -329,27 +335,70 @@ public class StructureBuilder {
             return null;
         }
 
-        // 重さ値選別に選別
-        int totalWeight = targets.stream()
-                .mapToInt(conn -> conn.getJigsawPart().getPoolEntry().getWeight())
-                .sum();
-        int selectWeight = connect.getRandom().nextInt(totalWeight);
-        int tmpWeight = 0;
-        JigsawConnector to = null;
-        for (JigsawConnector target : targets) {
-            tmpWeight += target.getJigsawPart().getPoolEntry().getWeight();
-            if (selectWeight <= tmpWeight) {
-                to = target;
-                break;
+        // 被らないか調べた上で選択する
+//        System.out.println("checking");
+        Map<JigsawConnector, ConflictTestResult> tests = Maps.newHashMap();
+        while (!targets.isEmpty()) {
+            // 重さ値選別に選別
+            int totalWeight = targets.stream()
+                    .mapToInt(conn -> conn.getJigsawPart().getPoolEntry().getWeight())
+                    .sum();
+            int selectWeight = connect.getRandom().nextInt(totalWeight);
+            int tmpWeight = 0;
+            JigsawConnector to = null;
+            for (JigsawConnector target : targets) {
+                tmpWeight += target.getJigsawPart().getPoolEntry().getWeight();
+                if (selectWeight <= tmpWeight) {
+                    to = target;
+                    break;
+                }
             }
+
+            if (to == null)
+                throw new IllegalStateException("program error");
+
+            // 重なりをテストする
+            int newRotation = connect.getOppositeOrientation().getAngle() - to.getOrientation().getAngle();
+            ConflictTestResult conflict = testConflictBlocks(to.getJigsawPart(), connect.getPosition(), to.getRelativeLocation(), newRotation);
+
+            if (conflict.conflictCount <= 0) {  // 被っていなかったら確定
+                structuredBlockLocations.addAll(conflict.locationNames);
+                return to;
+            }
+
+            targets.remove(to);
+            tests.put(to, conflict);
+//            System.out.println("conflict: " + to.getStructure().getName() + ", count: " + conflict.conflictCount);
         }
 
-        if (to == null)
-            throw new IllegalStateException("program error");
+        if (true)
+            return null;
+        // 全て重なる場合は、一番重なりが少ない物を選ぶ
+        Map.Entry<JigsawConnector, ConflictTestResult> hit = tests.entrySet().stream()
+                .min(Comparator.comparingInt(e -> e.getValue().conflictCount))
+                .orElse(null);
+        if (hit == null)
+            return null;
+        structuredBlockLocations.addAll(hit.getValue().locationNames);
+//        System.out.println("conflict resolve: " + hit.getKey().getJigsawPart().getPoolEntry().getFileName());
+        return hit.getKey();
+    }
 
-//         TODO: 被らないか調べた上で選択する
-//        JigsawConnector to = targets.get(connect.getRandom().nextInt(targets.size()));
-        return to;
+
+    private ConflictTestResult testConflictBlocks(JigsawPart part, BlockVector3 position, BlockVector3 center, int rotate) {
+        Set<String> locations = Sets.newHashSet();
+        int conflicts = 0;
+        for (BlockVector3 pos : part.getFilledBlockLocations()) {
+            pos = bUtils.rotate90(rotate, pos, center);
+            BlockVector3 pos2 = position.add(pos);
+
+            String locationName = String.format("%d,%d,%d", pos2.getBlockX(), pos2.getBlockY(), pos2.getBlockZ());
+            if (structuredBlockLocations.contains(locationName))
+                conflicts++;
+
+            locations.add(locationName);
+        }
+        return new ConflictTestResult(locations, conflicts);
     }
 
     private void showParticle(BlockVector3 loc, EditSession session, Color color) {
@@ -362,7 +411,7 @@ public class StructureBuilder {
     }
 
 
-    public static class ConnectInstance {
+    private static class ConnectInstance {
         private final EditSession session;
         private final int size;
         private final BlockVector3 position;
@@ -415,6 +464,19 @@ public class StructureBuilder {
             this.position = position;
             this.oppositeOrientation = orientation;
             this.size = size;
+        }
+
+    }
+
+
+    private static class ConflictTestResult {
+
+        private final Set<String> locationNames;
+        private final int conflictCount;
+
+        public ConflictTestResult(Set<String> locationNames, int conflicts) {
+            this.locationNames = locationNames;
+            this.conflictCount = conflicts;
         }
 
     }

@@ -20,4 +20,20 @@ public class bUtils {
         return vector;
     }
 
+    public static BlockVector3 rotate90(int angle, BlockVector3 vector, BlockVector3 center) {
+        BlockVector3 base = vector.subtract(center);
+
+        return rotate90(angle, base); // .add(center);
+
+//        angle = Math.round(angle / 90f) & 0x3;
+//        if (angle == 1) {  // 90
+//            return BlockVector3.at(-vector.getBlockZ(), vector.getBlockY(), vector.getBlockX());
+//        } else if (angle == 2) {  // 180
+//            return BlockVector3.at(-vector.getBlockX(), vector.getBlockY(), -vector.getBlockZ());
+//        } else if (angle == 3) {  // 270
+//            return BlockVector3.at(vector.getBlockZ(), vector.getBlockY(), -vector.getBlockX());
+//        }
+//        return vector;
+    }
+
 }

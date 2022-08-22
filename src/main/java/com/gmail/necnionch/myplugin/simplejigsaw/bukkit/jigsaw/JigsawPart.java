@@ -30,6 +30,7 @@ public class JigsawPart {
     private final Clipboard clipboard;
     private final Set<JigsawConnector> connectors = Sets.newHashSet();
     private final BlockVector3 origin;
+    private final Set<BlockVector3> filledBlockLocations = Sets.newHashSet();
 
 
     public JigsawPart(SimpleJigsawPlugin plugin, Structure structure, SchematicPool.Entry schematic, WorldEditBridge we, Clipboard clipboard) {
@@ -41,46 +42,51 @@ public class JigsawPart {
         this.origin = clipboard.getOrigin();
     }
 
-    public void loadConnectors(boolean clearStructures) {
+    public void loadBlocks(boolean clearStructures) {
         BlockType blockType = BlockTypes.JIGSAW;
         if (blockType == null)
             return;
 
         connectors.clear();
+        filledBlockLocations.clear();
 
         for (ExtentIterator it = worldEdit.iterateClipboard(clipboard); it.hasNext(); ) {
             ExtentIterator.Entry entry = it.next();
-            if (!blockType.equals(entry.baseBlock().getBlockType()))
-                continue;
+            boolean isStructure = false;
 
-            JigsawConnector connector = parseJigsawBlock(entry);
-            if (connector == null)
-                continue;
+            if (blockType.equals(entry.baseBlock().getBlockType())) {
+                JigsawConnector connector = parseJigsawBlock(entry);
 
-            this.connectors.add(connector);
+                if (connector != null) {
+                    this.connectors.add(connector);
 
-            if (clearStructures) {
-                String finalBlockState = connector.getFinalBlockState();
-                NamespacedKey namespacedKey = NamespacedKey.fromString(finalBlockState);
-                finalBlockState = (namespacedKey != null) ? namespacedKey.toString() : "minecraft:air";
+                    String finalBlockState = connector.getFinalBlockState();
+                    NamespacedKey namespacedKey = NamespacedKey.fromString(finalBlockState);
+                    finalBlockState = (namespacedKey != null) ? namespacedKey.toString() : "minecraft:air";
 
-                BlockType finalBlockType;
-                if (!finalBlockState.equalsIgnoreCase("minecraft:structure_void")) {
-                    finalBlockType = BlockTypes.get(finalBlockState);
-                    if (finalBlockType == null)
-                        finalBlockType = BlockTypes.AIR;
-                } else {
-                    finalBlockType = BlockTypes.STRUCTURE_VOID;
-                }
-
-                if (finalBlockType != null) {
-                    try {
-                        clipboard.setBlock(entry.location(), finalBlockType.getDefaultState());
-                    } catch (WorldEditException e) {
-                        e.printStackTrace();
+                    BlockType finalBlockType;
+                    if (!finalBlockState.equalsIgnoreCase("minecraft:structure_void")) {
+                        finalBlockType = BlockTypes.get(finalBlockState);
+                        if (finalBlockType == null)
+                            finalBlockType = BlockTypes.AIR;
+                    } else {
+                        finalBlockType = BlockTypes.STRUCTURE_VOID;
                     }
+
+                    if (clearStructures && finalBlockType != null) {
+                        try {
+                            clipboard.setBlock(entry.location(), finalBlockType.getDefaultState());
+                        } catch (WorldEditException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    isStructure = finalBlockType != null && finalBlockType.equals(BlockTypes.STRUCTURE_VOID);
                 }
             }
+
+            if (!isStructure)
+                filledBlockLocations.add(entry.location().subtract(origin));
 
         }
 
@@ -123,6 +129,9 @@ public class JigsawPart {
         return clipboard;
     }
 
+    public Set<BlockVector3> getFilledBlockLocations() {
+        return Collections.unmodifiableSet(filledBlockLocations);
+    }
 
     private @Nullable JigsawConnector parseJigsawBlock(ExtentIterator.Entry entry) {
         BaseBlock baseBlock = entry.baseBlock();

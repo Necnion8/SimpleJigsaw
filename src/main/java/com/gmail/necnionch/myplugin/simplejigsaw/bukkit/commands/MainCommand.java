@@ -10,9 +10,13 @@ import com.gmail.necnionch.myplugin.simplejigsaw.common.command.CommandSender;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.RootCommand;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEditException;
+import com.sk89q.worldedit.math.BlockVector3;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.World;
 import org.bukkit.command.BlockCommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
@@ -26,6 +30,7 @@ public class MainCommand extends RootCommand {
 
     private final SimpleJigsawPlugin plugin;
     private final WorldEditBridge worldEdit;
+    private boolean debugBuild;
 
 
     public MainCommand(SimpleJigsawPlugin plugin) {
@@ -33,6 +38,23 @@ public class MainCommand extends RootCommand {
         worldEdit = SimpleJigsawPlugin.getWorldEdit();
 
         addCommand("testbuild", null, this::cmdTestBuild, this::completeTestBuild);
+
+        addCommand("setdebug", null, (sender, args) -> {
+            debugBuild = !debugBuild;
+            if (debugBuild) {
+                sendTo(sender, "ジグソーブロックを残して生成します");
+            } else {
+                sendTo(sender, "ジグソーブロックを残さず生成します");
+            }
+        });
+
+    }
+
+    private void showParticle(BlockVector3 pos, World w, Color color) {
+        Particle.DustOptions dust = new Particle.DustOptions(color, 1);
+        plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+            w.spawnParticle(Particle.REDSTONE, pos.getBlockX()+.5, pos.getBlockY()+.5, pos.getBlockZ()+.5, 1, 0, 0, 0, dust);
+        }, 0, 1);
     }
 
     private Logger getLogger() {
@@ -126,7 +148,7 @@ public class MainCommand extends RootCommand {
         } catch (IndexOutOfBoundsException | NumberFormatException ignored) {
         }
 
-        StructureBuilder builder = plugin.createStructureBuilder(structure, maxSize, false);
+        StructureBuilder builder = plugin.createStructureBuilder(structure, maxSize, !debugBuild);
 
         try (EditSession session = worldEdit.newEditSession(location.getWorld())) {
             long processTime = System.currentTimeMillis();
