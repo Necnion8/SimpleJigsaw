@@ -37,6 +37,7 @@ public class MainCommand extends RootCommand {
         this.plugin = plugin;
         worldEdit = SimpleJigsawPlugin.getWorldEdit();
 
+        addCommand("reload", null, this::cmdReload);
         addCommand("testbuild", null, this::cmdTestBuild, this::completeTestBuild);
 
         addCommand("setdebug", null, (sender, args) -> {
@@ -169,6 +170,11 @@ public class MainCommand extends RootCommand {
         return Collections.emptyList();
     }
 
+
+    private void cmdReload(CommandSender sender, List<String> args) {
+        plugin.reload();
+        sendTo(sender, ChatColor.GOLD + "設定ファイルを再読み込みしました");
+    }
 
     public static MainCommand registerCommand(SimpleJigsawPlugin plugin) {
         MainCommand mainCommand = new MainCommand(plugin);
