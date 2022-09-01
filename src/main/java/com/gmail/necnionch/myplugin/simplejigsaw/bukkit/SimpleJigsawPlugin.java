@@ -48,7 +48,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
         //noinspection ResultOfMethodCallIgnored
         schematicsDir.mkdirs();
 
-        for (StructureConfig.Schematics entry : schematics) {
+        schematics.forEach(entry -> {
             for (SchematicPool pool : entry.getPools().values()) {
                 for (SchematicPool.Entry schematic : pool.getSchematics()) {
                     if (!new File(schematicsDir, schematic.getFileName()).isFile()) {
@@ -59,7 +59,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
             if (entry.getStartPool() == null) {
                 getLogger().warning("Not exists start pool name (in " + entry.getName() + ")");
             }
-        }
+        });
         getLogger().info("Loaded " + schematics.size() + " structure settings");
     }
 
