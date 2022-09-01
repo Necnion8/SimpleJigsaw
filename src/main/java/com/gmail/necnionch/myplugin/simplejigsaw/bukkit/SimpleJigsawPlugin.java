@@ -5,6 +5,7 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfigLo
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.WorldEditBridge;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawPart;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.listeners.ChunkListener;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.nms.NMSHandler;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.SchematicPool;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.Structure;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.StructureBuilder;
@@ -26,6 +27,9 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+        if (!new NMSHandler(getLogger()).init())
+            getLogger().warning("NMS disabled! (ignored it)");
+
         MainCommand.registerCommand(this);
         getServer().getPluginManager().registerEvents(new ChunkListener(this), this);
         reload();

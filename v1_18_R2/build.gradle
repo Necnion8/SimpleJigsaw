@@ -2,8 +2,8 @@ plugins {
     id 'java'
 }
 
-group = 'com.gmail.necnionch.myplugin'
-version = '1.0.0-SNAPSHOT'
+group 'com.gmail.necnionch.myplugin'
+version '1.0.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -18,15 +18,13 @@ repositories {
 }
 
 dependencies {
+    implementation files("../libs/spigot-1.18.2-R0.1-SNAPSHOT.jar")
+    implementation files("../libs/datafixerupper-5.0.28.jar")
+
     implementation 'org.jetbrains:annotations:23.0.0'
     compileOnly 'org.spigotmc:spigot-api:1.18.2-R0.1-SNAPSHOT'
-    implementation files("libs/worldedit-bukkit-7.2.12.jar")
-}
 
-jar {  // 二度ビルドしないとサブプロジェクトの変更が反映されない
-    from {
-        subprojects.collect {it.sourceSets.main.java.outputDir }
-    }
+    implementation rootProject
 }
 
 def targetJavaVersion = 17
@@ -42,14 +40,5 @@ java {
 tasks.withType(JavaCompile).configureEach {
     if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
         options.release = targetJavaVersion
-    }
-}
-
-processResources {
-    def props = [version: version]
-    inputs.properties props
-    filteringCharset 'UTF-8'
-    filesMatching('plugin.yml') {
-        expand props
     }
 }

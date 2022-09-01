@@ -14,3 +14,18 @@ schematics:
         weight: 1
       - file: schematic_b2.schem
         weight: 1
+
+
+generator:
+  enable: false
+  chances:
+    value: 500
+  worlds:
+    - test3
+  biomes:
+    - minecraft:plains
+    - terraformgenerator:scarlet_forest
+  bottom_fill:
+    default: glass
+    "minecraft:desert": sandstone
+
