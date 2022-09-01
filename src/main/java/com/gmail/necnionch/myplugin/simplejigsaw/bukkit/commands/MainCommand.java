@@ -1,8 +1,8 @@
 package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.commands;
 
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfig;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.WorldEditBridge;
-import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.Structure;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.StructureBuilder;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.bUtils;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.CommandBukkit;
@@ -137,7 +137,7 @@ public class MainCommand extends RootCommand {
             return;
         }
 
-        Structure structure = plugin.getStructureByName(structureName);
+        StructureConfig.Structure structure = plugin.getStructureByName(structureName);
         if (structure == null) {
             sendTo(sender, ChatColor.RED + "ストラクチャ " + structureName + " はロードされていません");
             return;

@@ -1,6 +1,6 @@
 package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw;
 
-import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.Structure;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfig;
 import com.sk89q.worldedit.math.BlockVector3;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,7 +36,7 @@ public class JigsawConnector {
         return jigsawPart;
     }
 
-    public @NotNull Structure getStructure() {
+    public @NotNull StructureConfig.Structure getStructure() {
         return jigsawPart.getStructure();
     }
 

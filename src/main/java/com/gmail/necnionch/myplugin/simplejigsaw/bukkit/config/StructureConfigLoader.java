@@ -1,7 +1,6 @@
 package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config;
 
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
-import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.Structure;
 import com.google.common.collect.Maps;
 
 import java.io.File;
@@ -41,13 +40,13 @@ public class StructureConfigLoader {
         }
     }
 
-    public Map<String, Structure> getStructures() {
+    public Map<String, StructureConfig.Structure> getStructures() {
         return configList
                 .values()
                 .stream()
                 .map(StructureConfig::getStructure)
                 .filter(Objects::nonNull)
-                .collect(Collectors.toMap(Structure::getName, c -> c));
+                .collect(Collectors.toMap(StructureConfig.Structure::getName, c -> c));
     }
 
 

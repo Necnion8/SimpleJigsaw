@@ -1,7 +1,7 @@
 package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.listeners;
 
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
-import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.Structure;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfig;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.StructureBuilder;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.bUtils;
 import com.google.common.collect.Lists;
@@ -64,7 +64,7 @@ public class ChunkListener implements Listener {
 
             getLogger().info("new chunk loaded: " + world.getName() + " " + chunk + ", " + loc);
 
-            Structure structure = plugin.getStructureByName("test");
+            StructureConfig.Structure structure = plugin.getStructureByName("test");
             if (structure == null) {
                 for (int i = 0; i < 255; i++) {
                     world.setType(loc.getBlockX(), i, loc.getBlockZ(), Material.STONE);

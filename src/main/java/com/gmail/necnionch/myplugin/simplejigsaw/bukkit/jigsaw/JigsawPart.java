@@ -1,9 +1,9 @@
 package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw;
 
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfig;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.WorldEditBridge;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.SchematicPool;
-import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.Structure;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.ExtentIterator;
 import com.google.common.collect.Sets;
 import com.sk89q.jnbt.CompoundTag;
@@ -25,7 +25,7 @@ import java.util.logging.Logger;
 public class JigsawPart {
     private final SimpleJigsawPlugin plugin;
     private final WorldEditBridge worldEdit;
-    private final Structure structure;
+    private final StructureConfig.Structure structure;
     private final SchematicPool.Entry schematic;
     private final Clipboard clipboard;
     private final Set<JigsawConnector> connectors = Sets.newHashSet();
@@ -33,7 +33,7 @@ public class JigsawPart {
     private final Set<BlockVector3> filledBlockLocations = Sets.newHashSet();
 
 
-    public JigsawPart(SimpleJigsawPlugin plugin, Structure structure, SchematicPool.Entry schematic, WorldEditBridge we, Clipboard clipboard) {
+    public JigsawPart(SimpleJigsawPlugin plugin, StructureConfig.Structure structure, SchematicPool.Entry schematic, WorldEditBridge we, Clipboard clipboard) {
         this.plugin = plugin;
         this.structure = structure;
         this.schematic = schematic;
@@ -100,7 +100,7 @@ public class JigsawPart {
         return clipboard;
     }
 
-    public Structure getStructure() {
+    public StructureConfig.Structure getStructure() {
         return structure;
     }
 

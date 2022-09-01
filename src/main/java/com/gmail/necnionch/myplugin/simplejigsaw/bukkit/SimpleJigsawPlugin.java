@@ -1,13 +1,13 @@
 package com.gmail.necnionch.myplugin.simplejigsaw.bukkit;
 
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.commands.MainCommand;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfig;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfigLoader;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.WorldEditBridge;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawPart;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.listeners.ChunkListener;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.nms.NMSHandler;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.SchematicPool;
-import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.Structure;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.StructureBuilder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -42,13 +42,13 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
     public void reload() {
         structuresLoader.loadAll(this);
 
-        Collection<Structure> structures = structuresLoader.getStructures().values();
+        Collection<StructureConfig.Structure> structures = structuresLoader.getStructures().values();
         File schematicsDir = new File(getDataFolder(), "schematics");
 
         //noinspection ResultOfMethodCallIgnored
         schematicsDir.mkdirs();
 
-        for (Structure structure : structures) {
+        for (StructureConfig.Structure structure : structures) {
             for (SchematicPool pool : structure.getPools().values()) {
                 for (SchematicPool.Entry schematic : pool.getSchematics()) {
                     if (!new File(schematicsDir, schematic.getFileName()).isFile()) {
@@ -63,15 +63,15 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
         getLogger().info("Loaded " + structures.size() + " structure settings");
     }
 
-    public @Nullable Structure getStructureByName(String name) {
+    public @Nullable StructureConfig.Structure getStructureByName(String name) {
         return structuresLoader.getStructures().get(name);
     }
 
-    public Map<String, Structure> getStructures() {
+    public Map<String, StructureConfig.Structure> getStructures() {
         return Collections.unmodifiableMap(structuresLoader.getStructures());
     }
 
-    public StructureBuilder createStructureBuilder(Structure structure, int maxSize, boolean clearStructures) {
+    public StructureBuilder createStructureBuilder(StructureConfig.Structure structure, int maxSize, boolean clearStructures) {
         Map<String, List<JigsawPart>> partsOfPool = Maps.newHashMap();
 
         structure.getPools().forEach((poolName, pool) -> {

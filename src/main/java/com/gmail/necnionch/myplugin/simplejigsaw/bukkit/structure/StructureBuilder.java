@@ -1,6 +1,7 @@
 package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure;
 
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfig;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawConnector;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawPart;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.WrapperPasteBuilder;
@@ -33,7 +34,7 @@ public class StructureBuilder {
 
     private final int maxSize;
     private final Map<String, List<JigsawPart>> partsOfPool;
-    private final Structure structure;
+    private final StructureConfig.Structure structure;
     private final JigsawPart[] parts;
     private @Nullable JigsawPart firstPart;
     private @Nullable Map<String, List<JigsawConnector>> poolOfConnectors;  // caching
@@ -44,7 +45,7 @@ public class StructureBuilder {
             .filter(bType -> !bType.equals(BlockTypes.STRUCTURE_VOID))
             .collect(Collectors.toSet());
 
-    public StructureBuilder(Structure structure, int maxSize, Map<String, List<JigsawPart>> partsOfPool) {
+    public StructureBuilder(StructureConfig.Structure structure, int maxSize, Map<String, List<JigsawPart>> partsOfPool) {
         this.structure = structure;
         this.maxSize = maxSize;
         this.partsOfPool = partsOfPool;
@@ -57,7 +58,7 @@ public class StructureBuilder {
         return SimpleJigsawPlugin.getLog();
     }
 
-    public Structure getStructure() {
+    public StructureConfig.Structure getStructure() {
         return structure;
     }
 
