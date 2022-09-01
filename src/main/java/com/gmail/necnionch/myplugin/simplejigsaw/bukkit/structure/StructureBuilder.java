@@ -34,7 +34,7 @@ public class StructureBuilder {
 
     private final int maxSize;
     private final Map<String, List<JigsawPart>> partsOfPool;
-    private final StructureConfig.Structure structure;
+    private final StructureConfig.Schematics schematics;
     private final JigsawPart[] parts;
     private @Nullable JigsawPart firstPart;
     private @Nullable Map<String, List<JigsawConnector>> poolOfConnectors;  // caching
@@ -45,8 +45,8 @@ public class StructureBuilder {
             .filter(bType -> !bType.equals(BlockTypes.STRUCTURE_VOID))
             .collect(Collectors.toSet());
 
-    public StructureBuilder(StructureConfig.Structure structure, int maxSize, Map<String, List<JigsawPart>> partsOfPool) {
-        this.structure = structure;
+    public StructureBuilder(StructureConfig.Schematics schematics, int maxSize, Map<String, List<JigsawPart>> partsOfPool) {
+        this.schematics = schematics;
         this.maxSize = maxSize;
         this.partsOfPool = partsOfPool;
         this.parts = partsOfPool.values().stream()
@@ -58,8 +58,8 @@ public class StructureBuilder {
         return SimpleJigsawPlugin.getLog();
     }
 
-    public StructureConfig.Structure getStructure() {
-        return structure;
+    public StructureConfig.Schematics getStructure() {
+        return schematics;
     }
 
     public List<JigsawConnector> getConnectorsByPool(String pool) {
@@ -126,7 +126,7 @@ public class StructureBuilder {
     }
 
     public @Nullable JigsawPart getRandomPartFromStartPool() {
-        SchematicPool pool = structure.getStartPool();
+        SchematicPool pool = schematics.getStartPool();
         if (pool == null)
             return null;
 

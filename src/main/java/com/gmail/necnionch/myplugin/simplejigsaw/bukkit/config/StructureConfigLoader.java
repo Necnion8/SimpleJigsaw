@@ -40,13 +40,13 @@ public class StructureConfigLoader {
         }
     }
 
-    public Map<String, StructureConfig.Structure> getStructures() {
+    public Map<String, StructureConfig.Schematics> getStructures() {
         return configList
                 .values()
                 .stream()
-                .map(StructureConfig::getStructure)
+                .map(StructureConfig::getSchematics)
                 .filter(Objects::nonNull)
-                .collect(Collectors.toMap(StructureConfig.Structure::getName, c -> c));
+                .collect(Collectors.toMap(StructureConfig.Schematics::getName, c -> c));
     }
 
 

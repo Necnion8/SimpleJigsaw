@@ -36,7 +36,7 @@ public class JigsawConnector {
         return jigsawPart;
     }
 
-    public @NotNull StructureConfig.Structure getStructure() {
+    public @NotNull StructureConfig.Schematics getStructure() {
         return jigsawPart.getStructure();
     }
 

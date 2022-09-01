@@ -137,8 +137,8 @@ public class MainCommand extends RootCommand {
             return;
         }
 
-        StructureConfig.Structure structure = plugin.getStructureByName(structureName);
-        if (structure == null) {
+        StructureConfig.Schematics schematics = plugin.getStructureByName(structureName);
+        if (schematics == null) {
             sendTo(sender, ChatColor.RED + "ストラクチャ " + structureName + " はロードされていません");
             return;
         }
@@ -149,7 +149,7 @@ public class MainCommand extends RootCommand {
         } catch (IndexOutOfBoundsException | NumberFormatException ignored) {
         }
 
-        StructureBuilder builder = plugin.createStructureBuilder(structure, maxSize, !debugBuild);
+        StructureBuilder builder = plugin.createStructureBuilder(schematics, maxSize, !debugBuild);
 
         try (EditSession session = worldEdit.newEditSession(location.getWorld())) {
             long processTime = System.currentTimeMillis();

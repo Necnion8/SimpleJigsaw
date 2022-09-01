@@ -60,14 +60,14 @@ public class WorldEditBridge {
 
     // jigsaw
 
-    public JigsawPart createJigsawPartOf(StructureConfig.Structure structure, SchematicPool.Entry schematic, Clipboard clipboard, boolean clearStructures) {
-        JigsawPart part = new JigsawPart(plugin, structure, schematic, this, clipboard);
+    public JigsawPart createJigsawPartOf(StructureConfig.Schematics schematics, SchematicPool.Entry schematic, Clipboard clipboard, boolean clearStructures) {
+        JigsawPart part = new JigsawPart(plugin, schematics, schematic, this, clipboard);
         part.loadBlocks(clearStructures);
         return part;
     }
 
-    public JigsawPart createJigsawPartOf(StructureConfig.Structure structure, SchematicPool.Entry schematic, Clipboard clipboard) {
-        JigsawPart part = new JigsawPart(plugin, structure, schematic, this, clipboard);
+    public JigsawPart createJigsawPartOf(StructureConfig.Schematics schematics, SchematicPool.Entry schematic, Clipboard clipboard) {
+        JigsawPart part = new JigsawPart(plugin, schematics, schematic, this, clipboard);
         part.loadBlocks(true);
         return part;
     }

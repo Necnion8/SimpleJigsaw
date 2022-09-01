@@ -25,7 +25,7 @@ import java.util.logging.Logger;
 public class JigsawPart {
     private final SimpleJigsawPlugin plugin;
     private final WorldEditBridge worldEdit;
-    private final StructureConfig.Structure structure;
+    private final StructureConfig.Schematics schematics;
     private final SchematicPool.Entry schematic;
     private final Clipboard clipboard;
     private final Set<JigsawConnector> connectors = Sets.newHashSet();
@@ -33,9 +33,9 @@ public class JigsawPart {
     private final Set<BlockVector3> filledBlockLocations = Sets.newHashSet();
 
 
-    public JigsawPart(SimpleJigsawPlugin plugin, StructureConfig.Structure structure, SchematicPool.Entry schematic, WorldEditBridge we, Clipboard clipboard) {
+    public JigsawPart(SimpleJigsawPlugin plugin, StructureConfig.Schematics schematics, SchematicPool.Entry schematic, WorldEditBridge we, Clipboard clipboard) {
         this.plugin = plugin;
-        this.structure = structure;
+        this.schematics = schematics;
         this.schematic = schematic;
         this.worldEdit = we;
         this.clipboard = clipboard;
@@ -100,8 +100,8 @@ public class JigsawPart {
         return clipboard;
     }
 
-    public StructureConfig.Structure getStructure() {
-        return structure;
+    public StructureConfig.Schematics getStructure() {
+        return schematics;
     }
 
     public SchematicPool.Entry getPoolEntry() {

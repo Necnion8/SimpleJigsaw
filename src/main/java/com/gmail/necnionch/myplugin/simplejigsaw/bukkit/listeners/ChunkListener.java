@@ -64,19 +64,19 @@ public class ChunkListener implements Listener {
 
             getLogger().info("new chunk loaded: " + world.getName() + " " + chunk + ", " + loc);
 
-            StructureConfig.Structure structure = plugin.getStructureByName("test");
-            if (structure == null) {
+            StructureConfig.Schematics schematics = plugin.getStructureByName("test");
+            if (schematics == null) {
                 for (int i = 0; i < 255; i++) {
                     world.setType(loc.getBlockX(), i, loc.getBlockZ(), Material.STONE);
                 }
 
             } else {
-                StructureBuilder builder = plugin.createStructureBuilder(structure, 7, true);
+                StructureBuilder builder = plugin.createStructureBuilder(schematics, 7, true);
 
                 try (EditSession session = SimpleJigsawPlugin.getWorldEdit().newEditSession(world)) {
                     long processTime = System.currentTimeMillis();
                     int generatedParts = builder.build(session, bUtils.toBlockVector3(loc), 0);
-                    getLogger().info("Generated " + structure.getName() + " structure (" + generatedParts + " parts, " + (System.currentTimeMillis() - processTime) + " ms)");
+                    getLogger().info("Generated " + schematics.getName() + " structure (" + generatedParts + " parts, " + (System.currentTimeMillis() - processTime) + " ms)");
 
                 } catch (WorldEditException e) {
                     e.printStackTrace();

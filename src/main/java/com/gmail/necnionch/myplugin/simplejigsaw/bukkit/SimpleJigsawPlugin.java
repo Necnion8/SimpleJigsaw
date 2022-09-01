@@ -42,39 +42,39 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
     public void reload() {
         structuresLoader.loadAll(this);
 
-        Collection<StructureConfig.Structure> structures = structuresLoader.getStructures().values();
+        Collection<StructureConfig.Schematics> schematics = structuresLoader.getStructures().values();
         File schematicsDir = new File(getDataFolder(), "schematics");
 
         //noinspection ResultOfMethodCallIgnored
         schematicsDir.mkdirs();
 
-        for (StructureConfig.Structure structure : structures) {
-            for (SchematicPool pool : structure.getPools().values()) {
+        for (StructureConfig.Schematics schematics : schematics) {
+            for (SchematicPool pool : schematics.getPools().values()) {
                 for (SchematicPool.Entry schematic : pool.getSchematics()) {
                     if (!new File(schematicsDir, schematic.getFileName()).isFile()) {
-                        getLogger().warning("Not exists schematic file: " + schematic.getFileName() + " (in " + structure.getName() + ")");
+                        getLogger().warning("Not exists schematic file: " + schematic.getFileName() + " (in " + schematics.getName() + ")");
                     }
                 }
             }
-            if (structure.getStartPool() == null) {
-                getLogger().warning("Not exists start pool name (in " + structure.getName() + ")");
+            if (schematics.getStartPool() == null) {
+                getLogger().warning("Not exists start pool name (in " + schematics.getName() + ")");
             }
         }
-        getLogger().info("Loaded " + structures.size() + " structure settings");
+        getLogger().info("Loaded " + schematics.size() + " structure settings");
     }
 
-    public @Nullable StructureConfig.Structure getStructureByName(String name) {
+    public @Nullable StructureConfig.Schematics getStructureByName(String name) {
         return structuresLoader.getStructures().get(name);
     }
 
-    public Map<String, StructureConfig.Structure> getStructures() {
+    public Map<String, StructureConfig.Schematics> getStructures() {
         return Collections.unmodifiableMap(structuresLoader.getStructures());
     }
 
-    public StructureBuilder createStructureBuilder(StructureConfig.Structure structure, int maxSize, boolean clearStructures) {
+    public StructureBuilder createStructureBuilder(StructureConfig.Schematics schematics, int maxSize, boolean clearStructures) {
         Map<String, List<JigsawPart>> partsOfPool = Maps.newHashMap();
 
-        structure.getPools().forEach((poolName, pool) -> {
+        schematics.getPools().forEach((poolName, pool) -> {
             pool.getSchematics().forEach(schematic -> {
                 String schematicFile = "schematics/" + schematic.getFileName();
                 Clipboard clipboard = worldEditBridge.loadSchematic(new File(getDataFolder(), schematicFile));
@@ -82,7 +82,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
                     getLogger().warning("Failed to load " + schematicFile + " file");
                     return;
                 }
-                JigsawPart part = worldEditBridge.createJigsawPartOf(structure, schematic, clipboard, clearStructures);
+                JigsawPart part = worldEditBridge.createJigsawPartOf(schematics, schematic, clipboard, clearStructures);
                 if (partsOfPool.containsKey(poolName)) {
                     partsOfPool.get(poolName).add(part);
                 } else {
@@ -91,7 +91,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
             });
         });
 
-        return new StructureBuilder(structure, maxSize, partsOfPool);
+        return new StructureBuilder(schematics, maxSize, partsOfPool);
     }
 
 

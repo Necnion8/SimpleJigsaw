@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 public class StructureConfig extends BukkitConfigDriver {
     private final String name;
-    private @Nullable Structure structure;
+    private @Nullable StructureConfig.Schematics schematics;
     private @Nullable Generator generator;
 
     public StructureConfig(JavaPlugin plugin, String fileName, String name) {
@@ -25,12 +25,12 @@ public class StructureConfig extends BukkitConfigDriver {
         this.name = name;
     }
 
-    public @Nullable Structure getStructure() {
-        return structure;
+    public @Nullable StructureConfig.Schematics getSchematics() {
+        return schematics;
     }
 
-    public void setStructure(@NotNull Structure structure) {
-        this.structure = structure;
+    public void setSchematics(@NotNull StructureConfig.Schematics schematics) {
+        this.schematics = schematics;
     }
 
     public @Nullable Generator getGenerator() {
@@ -49,9 +49,9 @@ public class StructureConfig extends BukkitConfigDriver {
     public boolean onLoaded(FileConfiguration config) {
         if (super.onLoaded(config)) {
 
-            this.structure = null;
+            this.schematics = null;
             Optional.ofNullable(config.getConfigurationSection("schematics"))
-                    .ifPresent(conf -> this.structure = Structure.deserialize(name, conf));
+                    .ifPresent(conf -> this.schematics = Schematics.deserialize(name, conf));
 
             this.generator = null;
             Optional.ofNullable(config.getConfigurationSection("generator"))
@@ -64,8 +64,8 @@ public class StructureConfig extends BukkitConfigDriver {
 
     @Override
     public boolean save() {
-        if (structure != null)
-            structure.serialize(Optional.ofNullable(config.getConfigurationSection("schematics")).orElseGet(() ->
+        if (schematics != null)
+            schematics.serialize(Optional.ofNullable(config.getConfigurationSection("schematics")).orElseGet(() ->
                     config.createSection("schematics")));
 
         if (generator != null)
@@ -76,12 +76,12 @@ public class StructureConfig extends BukkitConfigDriver {
     }
 
 
-    public static class Structure {
+    public static class Schematics {
         private final String name;
         private final Map<String, SchematicPool> pools;
         private @Nullable SchematicPool startPool;
 
-        public Structure(String name, Map<String, SchematicPool> pools, SchematicPool startPool) {
+        public Schematics(String name, Map<String, SchematicPool> pools, SchematicPool startPool) {
             this.name = name;
             this.pools = pools;
             setStartPool(startPool);
@@ -106,7 +106,7 @@ public class StructureConfig extends BukkitConfigDriver {
         }
 
 
-        public static StructureConfig.Structure deserialize(String name, ConfigurationSection config) {
+        public static Schematics deserialize(String name, ConfigurationSection config) {
             String startPoolName = config.getString("start_pool");
             SchematicPool startPool = null;
             Map<String, SchematicPool> pools = Maps.newHashMap();
@@ -127,7 +127,7 @@ public class StructureConfig extends BukkitConfigDriver {
                 }
             }
 
-            return new Structure(name, pools, startPool);
+            return new Schematics(name, pools, startPool);
 
         }
 
