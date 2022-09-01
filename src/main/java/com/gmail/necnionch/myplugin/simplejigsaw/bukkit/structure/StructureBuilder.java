@@ -3,6 +3,7 @@ package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawConnector;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawPart;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.WrapperPasteBuilder;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.bUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -20,6 +21,7 @@ import com.sk89q.worldedit.session.ClipboardHolder;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Color;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -155,8 +157,13 @@ public class StructureBuilder {
         if (angle != 0)
             clipboardHolder.setTransform(new AffineTransform().rotateY(-angle));
 
-        Operations.complete(clipboardHolder
-                .createPaste(session)
+//        Operations.complete(clipboardHolder
+//                .createPaste(session)
+//                .to(position)
+//                .maskSource(createNonReplaceMaskStructureVoid(clipboard))
+//                .build()
+//        );
+        Operations.complete(new WrapperPasteBuilder(clipboardHolder, session, clipboard.getOrigin())
                 .to(position)
                 .maskSource(createNonReplaceMaskStructureVoid(clipboard))
                 .build()
@@ -178,17 +185,23 @@ public class StructureBuilder {
             return 0;
 
         // 貼り付ける
-        Clipboard clipboard = to.getJigsawPart().setClipboardOriginToConnector(to);
+//        Clipboard clipboard = to.getJigsawPart().setClipboardOriginToConnector(to);
+        Clipboard clipboard = to.getJigsawPart().getClipboard();
         ClipboardHolder clipboardHolder = new ClipboardHolder(clipboard);
-
+//
         int newRotation = orient.getAngle();
         newRotation = newRotation - to.getOrientation().getAngle();
 
         if (newRotation != 0)
             clipboardHolder.setTransform(new AffineTransform().rotateY(-newRotation));
 
-        Operations.complete(clipboardHolder
-                .createPaste(connect.getSession())
+//        Operations.complete(clipboardHolder
+//                .createPaste(connect.getSession())
+//                .to(position)
+//                .maskSource(createNonReplaceMaskStructureVoid(clipboard))
+//                .build()
+//        );
+        Operations.complete(new WrapperPasteBuilder(clipboardHolder, connect.getSession(), to.getOriginalLocation())
                 .to(position)
                 .maskSource(createNonReplaceMaskStructureVoid(clipboard))
                 .build()
@@ -304,13 +317,18 @@ public class StructureBuilder {
     }
 
     private @Nullable JigsawConnector selectConnector(ConnectInstance connect) {
+        getLogger().warning("selecting");
         JigsawConnector from = connect.getConnector();
         List<JigsawConnector> targets;
         Predicate<JigsawConnector> connectorsPredicate = conn ->
                 conn.getOrientation().isHorizontal() == connect.getOppositeOrientation().isHorizontal()
                         && conn.getName().startsWith(from.getTargetName());
+        getLogger().warning("pos: " + connect.getPosition());
+        getLogger().warning("size: " + connect.getSize());
+        getLogger().warning("rot: " + connect.getOppositeOrientation());
 
         if (maxSize <= connect.getSize()) {
+            System.out.println("maxSize <= connectSize");
             // 最大サイズだった場合は末端パーツ
             targets = getEndConnectorsByPool(from.getPool())
                     .stream()
@@ -361,14 +379,17 @@ public class StructureBuilder {
             int newRotation = connect.getOppositeOrientation().getAngle() - to.getOrientation().getAngle();
             ConflictTestResult conflict = testConflictBlocks(to.getJigsawPart(), connect.getPosition(), to.getRelativeLocation(), newRotation);
 
+            System.out.println("conflict test: " + conflict.conflictCount + ", " + to.getJigsawPart().getPoolEntry().getFileName());
             if (conflict.conflictCount <= 0) {  // 被っていなかったら確定
                 structuredBlockLocations.addAll(conflict.locationNames);
+                getLogger().info("resolved");
                 return to;
             }
 
             targets.remove(to);
             tests.put(to, conflict);
 //            System.out.println("conflict: " + to.getStructure().getName() + ", count: " + conflict.conflictCount);
+            System.out.println("conflict");
         }
 
         if (true)
@@ -402,12 +423,13 @@ public class StructureBuilder {
     }
 
     private void showParticle(BlockVector3 loc, EditSession session, Color color) {
-//        World world = BukkitAdapter.adapt(session.getWorld());
-////        getLogger().info(name + ": " + loc);
-//        Particle.DustOptions dust = new Particle.DustOptions(color, 1);
-//        plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
-//            world.spawnParticle(Particle.REDSTONE, loc.getBlockX() + .5, loc.getBlockY() + 1.5, loc.getBlockZ() + .5, 1, 0, 0, 0, dust);
-//        }, 0, 1);
+        org.bukkit.World world = com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(session.getWorld());
+        getLogger().info(color + ": " + loc);
+        org.bukkit.Particle.DustOptions dust = new org.bukkit.Particle.DustOptions(color, 1);
+        SimpleJigsawPlugin pl = JavaPlugin.getPlugin(SimpleJigsawPlugin.class);
+        pl.getServer().getScheduler().scheduleSyncRepeatingTask(pl, () -> {
+            world.spawnParticle(org.bukkit.Particle.REDSTONE, loc.getBlockX() + .5, loc.getBlockY() + 1.5, loc.getBlockZ() + .5, 1, 0, 0, 0, dust);
+        }, 0, 1);
     }
 
 

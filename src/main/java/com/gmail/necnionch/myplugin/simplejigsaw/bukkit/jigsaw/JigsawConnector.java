@@ -182,7 +182,7 @@ public class JigsawConnector {
         }
 
         public String toString() {
-            return name() + "(" + x + "," + z + ")";
+            return name() + "(" + x + "," + y + "," + z + ")";
         }
 
     }

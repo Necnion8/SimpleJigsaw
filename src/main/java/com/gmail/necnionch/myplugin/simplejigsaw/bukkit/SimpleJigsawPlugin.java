@@ -4,6 +4,7 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.commands.MainCommand;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfigLoader;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.WorldEditBridge;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawPart;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.listeners.ChunkListener;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.SchematicPool;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.Structure;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.StructureBuilder;
@@ -26,6 +27,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
     public void onEnable() {
         instance = this;
         MainCommand.registerCommand(this);
+        getServer().getPluginManager().registerEvents(new ChunkListener(this), this);
         reload();
     }
 
