@@ -28,4 +28,11 @@ generator:
   bottom_fill:
     default: glass
     "minecraft:desert": sandstone
+  ground_check:
+    type: whitelist
+    blocks:
+      - grass_block
+      - stone
+      - sand
+      - "#sand"
 

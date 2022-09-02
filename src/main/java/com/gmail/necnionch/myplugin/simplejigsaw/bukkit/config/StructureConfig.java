@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -146,50 +147,38 @@ public class StructureConfig extends BukkitConfigDriver {
     }
 
     public static class Generator {
-        public void serialize(ConfigurationSection config) {
-            config.set("enable", enable);
-            config.set("chances.value", chanceValue);
-            config.set("worlds", worlds);
-            config.set("biomes", biomes);
-            config.set("bottom_fill", bottomFill);
-        }
 
-        public static Generator deserialize(ConfigurationSection config) {
-            return new Generator(
-                    config.getBoolean("enable", false),
-                    config.getInt("chances.value", 500),
-                    config.getStringList("worlds"),
-                    config.getStringList("biomes"),
-                    Optional.ofNullable(config.getConfigurationSection("bottom_fill"))
-                            .map(sec -> {
-                                Map<String, String> biomeFill = Maps.newHashMap();
-                                sec.getKeys(false).forEach(k -> biomeFill.put(k, sec.getString(k)));
-                                return biomeFill;
-                            })
-                            .orElseGet(Maps::newHashMap)
-            );
-        }
-
-        private final boolean enable;
-        private final int chanceValue;
+        private boolean enable;
+        private int chanceValue;
         private final List<String> worlds;
         private final List<String> biomes;
         private final Map<String, String> bottomFill;
+        private final GroundCheck groundCheck;
 
-        public Generator(boolean enable, int chanceValue, List<String> worlds, List<String> biomes, Map<String, String> bottomFill) {
+
+        public Generator(boolean enable, int chanceValue, List<String> worlds, List<String> biomes, Map<String, String> bottomFill, GroundCheck groundCheck) {
             this.enable = enable;
             this.chanceValue = chanceValue;
             this.worlds = worlds;
             this.biomes = biomes;
             this.bottomFill = bottomFill;
+            this.groundCheck = groundCheck;
         }
 
         public boolean isEnable() {
             return enable;
         }
 
+        public void setEnable(boolean enable) {
+            this.enable = enable;
+        }
+
         public int getChanceValue() {
             return chanceValue;
+        }
+
+        public void setChanceValue(int chanceValue) {
+            this.chanceValue = chanceValue;
         }
 
         public List<String> worlds() {
@@ -204,5 +193,79 @@ public class StructureConfig extends BukkitConfigDriver {
             return bottomFill;
         }
 
+        public GroundCheck getGroundCheck() {
+            return groundCheck;
+        }
+
+
+        public void serialize(ConfigurationSection config) {
+            config.set("enable", enable);
+            config.set("chances.value", chanceValue);
+            config.set("worlds", worlds);
+            config.set("biomes", biomes);
+            config.set("bottom_fill", bottomFill);
+            config.set("ground_check.type", groundCheck.type.name().toLowerCase(Locale.ROOT));
+            config.set("ground_check.blocks", groundCheck.blocks);
+        }
+
+        public static Generator deserialize(ConfigurationSection config) {
+            return new Generator(
+                    config.getBoolean("enable", false),
+                    config.getInt("chances.value", 500),
+                    config.getStringList("worlds"),
+                    config.getStringList("biomes"),
+                    Optional.ofNullable(config.getConfigurationSection("bottom_fill"))
+                            .map(sec -> {
+                                Map<String, String> biomeFill = Maps.newHashMap();
+                                sec.getKeys(false).forEach(k -> biomeFill.put(k, sec.getString(k)));
+                                return biomeFill;
+                            })
+                            .orElseGet(Maps::newHashMap),
+                    Optional.ofNullable(config.getConfigurationSection("ground_check"))
+                            .map(sec -> {
+                                GroundCheck.Type type = Optional.ofNullable(sec.getString("type"))
+                                        .map(s -> s.toUpperCase(Locale.ROOT))
+                                        .map(s -> {
+                                            try {
+                                                return GroundCheck.Type.valueOf(s);
+                                            } catch (IllegalArgumentException e) {
+                                                return GroundCheck.Type.WHITELIST;
+                                            }
+                                        })
+                                        .orElse(GroundCheck.Type.WHITELIST);
+                                return new GroundCheck(type, sec.getStringList("blocks"));
+                            })
+                            .orElseGet(() -> new GroundCheck(GroundCheck.Type.BLACKLIST, Lists.newArrayList()))
+            );
+        }
+
+
+        public static class GroundCheck {
+
+            public enum Type {
+                WHITELIST, BLACKLIST
+            }
+
+            private Type type;
+            private final List<String> blocks;
+
+            public GroundCheck(Type type, List<String> blocks) {
+                this.type = type;
+                this.blocks = blocks;
+            }
+
+            public Type getType() {
+                return type;
+            }
+
+            public void setType(Type type) {
+                this.type = type;
+            }
+
+            public List<String> locks() {
+                return blocks;
+            }
+
+        }
     }
 }
