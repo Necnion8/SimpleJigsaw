@@ -18,21 +18,27 @@ schematics:
 
 generator:
   enable: false
+  size: 7
+  random_rotate: true
   chances:
     value: 500
   worlds:
     - test3
-  biomes:
-    - minecraft:plains
-    - terraformgenerator:scarlet_forest
-  bottom_fill:
-    default: glass
-    "minecraft:desert": sandstone
   ground_check:
-    type: whitelist
+    test:
+      distance: 16
+      count: 8
+      required_count: 4
+      y_avg: 8
+    blocks_type: whitelist
     blocks:
       - grass_block
       - stone
       - sand
-      - "#sand"
+    biomes:
+      - minecraft:plains
+      - terraformgenerator:scarlet_forest
+  bottom_fill:
+    default: glass
+    "minecraft:desert": sandstone
 

@@ -11,18 +11,20 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEditException;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extent.Extent;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.function.mask.BlockTypeMask;
 import com.sk89q.worldedit.function.mask.Mask;
+import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.transform.AffineTransform;
 import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.world.World;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Color;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -143,6 +145,16 @@ public class StructureBuilder {
     }
 
     public int build(EditSession session, Random random, BlockVector3 position, int angle) throws WorldEditException {
+        List<WorldEditOperation> operations = Lists.newArrayList();
+        int builds = build(session, random, position, angle, operations);
+
+        for (WorldEditOperation e : operations) {
+            Operations.complete(e.getOperation());
+        }
+        return builds;
+    }
+
+    public int build(EditSession session, Random random, BlockVector3 position, int angle, List<WorldEditOperation> operations) throws WorldEditException {
         if (firstPart == null)
             firstPart = getRandomPartFromStartPool();
         if (firstPart == null)
@@ -164,16 +176,15 @@ public class StructureBuilder {
 //                .maskSource(createNonReplaceMaskStructureVoid(clipboard))
 //                .build()
 //        );
-        Operations.complete(new WrapperPasteBuilder(clipboardHolder, session, clipboard.getOrigin())
+        operations.add(new WorldEditOperation(new WrapperPasteBuilder(clipboardHolder, session, clipboard.getOrigin())
                 .to(position)
                 .maskSource(createNonReplaceMaskStructureVoid(clipboard))
-                .build()
-        );
+                .build(), session.getWorld(), position));
 
         ConflictTestResult test = testConflictBlocks(firstPart, position, firstPart.toRelativeLocation(clipboard.getOrigin()), angle);
         structuredBlockLocations.addAll(test.locationNames);
 
-        return 1 + buildJigsawConnectors(session, random, firstPart, position, angle, 1);
+        return 1 + buildJigsawConnectors(session, random, firstPart, position, angle, 1, operations);
     }
 
 
@@ -202,11 +213,10 @@ public class StructureBuilder {
 //                .maskSource(createNonReplaceMaskStructureVoid(clipboard))
 //                .build()
 //        );
-        Operations.complete(new WrapperPasteBuilder(clipboardHolder, connect.getSession(), to.getOriginalLocation())
+        connect.operations.add(new WorldEditOperation(new WrapperPasteBuilder(clipboardHolder, connect.getSession(), to.getOriginalLocation())
                 .to(position)
                 .maskSource(createNonReplaceMaskStructureVoid(clipboard))
-                .build()
-        );
+                .build(), connect.getSession().getWorld(), position));
 //        markStructured(to.getJigsawPart(), position, to.getJigsawPart().toRelativeLocation(clipboard.getOrigin()), newRotation, Color.YELLOW);
 
         // 最大サイズなら終了
@@ -262,7 +272,7 @@ public class StructureBuilder {
         return results;
     }
 
-    private int buildJigsawConnectors(EditSession session, Random random, JigsawPart part, BlockVector3 position, int angle, int size) throws WorldEditException {
+    private int buildJigsawConnectors(EditSession session, Random random, JigsawPart part, BlockVector3 position, int angle, int size, List<WorldEditOperation> operations) throws WorldEditException {
         // 含まれるConnectorを探し、次のパーツのために座標をもとめる
         int results = 0;
 
@@ -306,7 +316,7 @@ public class StructureBuilder {
                 }
             }
 
-            results += expandJigsawPart(new ConnectInstance(session, random, conn, pos, ori, size + 1));
+            results += expandJigsawPart(new ConnectInstance(session, random, conn, pos, ori, size + 1, operations));
 //            break;
         }
         return results;
@@ -318,18 +328,18 @@ public class StructureBuilder {
     }
 
     private @Nullable JigsawConnector selectConnector(ConnectInstance connect) {
-        getLogger().warning("selecting");
+//        getLogger().warning("selecting");
         JigsawConnector from = connect.getConnector();
         List<JigsawConnector> targets;
         Predicate<JigsawConnector> connectorsPredicate = conn ->
                 conn.getOrientation().isHorizontal() == connect.getOppositeOrientation().isHorizontal()
                         && conn.getName().startsWith(from.getTargetName());
-        getLogger().warning("pos: " + connect.getPosition());
-        getLogger().warning("size: " + connect.getSize());
-        getLogger().warning("rot: " + connect.getOppositeOrientation());
+//        getLogger().warning("pos: " + connect.getPosition());
+//        getLogger().warning("size: " + connect.getSize());
+//        getLogger().warning("rot: " + connect.getOppositeOrientation());
 
         if (maxSize <= connect.getSize()) {
-            System.out.println("maxSize <= connectSize");
+//            System.out.println("maxSize <= connectSize");
             // 最大サイズだった場合は末端パーツ
             targets = getEndConnectorsByPool(from.getPool())
                     .stream()
@@ -380,17 +390,17 @@ public class StructureBuilder {
             int newRotation = connect.getOppositeOrientation().getAngle() - to.getOrientation().getAngle();
             ConflictTestResult conflict = testConflictBlocks(to.getJigsawPart(), connect.getPosition(), to.getRelativeLocation(), newRotation);
 
-            System.out.println("conflict test: " + conflict.conflictCount + ", " + to.getJigsawPart().getPoolEntry().getFileName());
+//            System.out.println("conflict test: " + conflict.conflictCount + ", " + to.getJigsawPart().getPoolEntry().getFileName());
             if (conflict.conflictCount <= 0) {  // 被っていなかったら確定
                 structuredBlockLocations.addAll(conflict.locationNames);
-                getLogger().info("resolved");
+//                getLogger().info("resolved");
                 return to;
             }
 
             targets.remove(to);
             tests.put(to, conflict);
 //            System.out.println("conflict: " + to.getStructure().getName() + ", count: " + conflict.conflictCount);
-            System.out.println("conflict");
+//            System.out.println("conflict");
         }
 
         if (true)
@@ -424,13 +434,13 @@ public class StructureBuilder {
     }
 
     private void showParticle(BlockVector3 loc, EditSession session, Color color) {
-        org.bukkit.World world = com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(session.getWorld());
-        getLogger().info(color + ": " + loc);
-        org.bukkit.Particle.DustOptions dust = new org.bukkit.Particle.DustOptions(color, 1);
-        SimpleJigsawPlugin pl = JavaPlugin.getPlugin(SimpleJigsawPlugin.class);
-        pl.getServer().getScheduler().scheduleSyncRepeatingTask(pl, () -> {
-            world.spawnParticle(org.bukkit.Particle.REDSTONE, loc.getBlockX() + .5, loc.getBlockY() + 1.5, loc.getBlockZ() + .5, 1, 0, 0, 0, dust);
-        }, 0, 1);
+//        org.bukkit.World world = com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(session.getWorld());
+//        getLogger().info(color + ": " + loc);
+//        org.bukkit.Particle.DustOptions dust = new org.bukkit.Particle.DustOptions(color, 1);
+//        SimpleJigsawPlugin pl = org.bukkit.plugin.java.JavaPlugin.getPlugin(SimpleJigsawPlugin.class);
+//        pl.getServer().getScheduler().scheduleSyncRepeatingTask(pl, () -> {
+//            world.spawnParticle(org.bukkit.Particle.REDSTONE, loc.getBlockX() + .5, loc.getBlockY() + 1.5, loc.getBlockZ() + .5, 1, 0, 0, 0, dust);
+//        }, 0, 1);
     }
 
 
@@ -441,6 +451,7 @@ public class StructureBuilder {
         private final JigsawConnector.Orientation oppositeOrientation;
         private final JigsawConnector connector;
         private final Random random;
+        private final List<WorldEditOperation> operations;
 
         public EditSession getSession() {
             return session;
@@ -478,15 +489,17 @@ public class StructureBuilder {
             this.connector = connector;
             this.position = position;
             this.oppositeOrientation = orientation;
+            this.operations = connectInstance.operations;
         }
 
-        public ConnectInstance(EditSession session, Random random, JigsawConnector connector, BlockVector3 position, JigsawConnector.Orientation orientation, int size) {
+        public ConnectInstance(EditSession session, Random random, JigsawConnector connector, BlockVector3 position, JigsawConnector.Orientation orientation, int size, List<WorldEditOperation> operations) {
             this.session = session;
             this.random = random;
             this.connector = connector;
             this.position = position;
             this.oppositeOrientation = orientation;
             this.size = size;
+            this.operations = operations;
         }
 
     }
@@ -504,4 +517,43 @@ public class StructureBuilder {
 
     }
 
+
+    public static class WorldEditOperation {
+
+        private final Operation operation;
+        private final BlockVector3 position;
+        private final World world;
+        private final int index;
+        private static int INDEX = 0;
+        private final org.bukkit.World bWorld;
+
+        public WorldEditOperation(Operation operation, World world, BlockVector3 position) {
+            this.operation = operation;
+            this.position = position;
+            this.world = world;
+            this.index = INDEX++;
+            bWorld = BukkitAdapter.adapt(world);
+        }
+
+        public Operation getOperation() {
+            return operation;
+        }
+
+        public BlockVector3 getPosition() {
+            return position;
+        }
+
+        public World getWorld() {
+            return world;
+        }
+
+        public int getIndex() {
+            return index;
+        }
+
+        public org.bukkit.World getBukkitWorld() {
+            return bWorld;
+        }
+
+    }
 }

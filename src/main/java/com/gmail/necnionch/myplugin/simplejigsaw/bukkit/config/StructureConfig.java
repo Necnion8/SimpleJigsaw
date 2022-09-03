@@ -151,18 +151,19 @@ public class StructureConfig extends BukkitConfigDriver {
         private boolean enable;
         private int chanceValue;
         private final List<String> worlds;
-        private final List<String> biomes;
         private final Map<String, String> bottomFill;
         private final GroundCheck groundCheck;
+        private int size;
+        private boolean randomRotate;
 
-
-        public Generator(boolean enable, int chanceValue, List<String> worlds, List<String> biomes, Map<String, String> bottomFill, GroundCheck groundCheck) {
+        public Generator(boolean enable, int chanceValue, List<String> worlds, Map<String, String> bottomFill, GroundCheck groundCheck, int size, boolean randomRotate) {
             this.enable = enable;
             this.chanceValue = chanceValue;
             this.worlds = worlds;
-            this.biomes = biomes;
             this.bottomFill = bottomFill;
             this.groundCheck = groundCheck;
+            this.size = size;
+            this.randomRotate = randomRotate;
         }
 
         public boolean isEnable() {
@@ -185,10 +186,6 @@ public class StructureConfig extends BukkitConfigDriver {
             return worlds;
         }
 
-        public List<String> biomes() {
-            return biomes;
-        }
-
         public Map<String, String> bottomFill() {
             return bottomFill;
         }
@@ -197,15 +194,36 @@ public class StructureConfig extends BukkitConfigDriver {
             return groundCheck;
         }
 
+        public int getSize() {
+            return size;
+        }
+
+        public void setSize(int size) {
+            this.size = size;
+        }
+
+        public boolean isRandomRotate() {
+            return randomRotate;
+        }
+
+        public void setRandomRotate(boolean randomRotate) {
+            this.randomRotate = randomRotate;
+        }
 
         public void serialize(ConfigurationSection config) {
             config.set("enable", enable);
             config.set("chances.value", chanceValue);
             config.set("worlds", worlds);
-            config.set("biomes", biomes);
             config.set("bottom_fill", bottomFill);
-            config.set("ground_check.type", groundCheck.type.name().toLowerCase(Locale.ROOT));
+            config.set("size", size);
+            config.set("random_rotate", randomRotate);
+            config.set("ground_check.test.distance", groundCheck.getDistance());
+            config.set("ground_check.test.count", groundCheck.getCount());
+            config.set("ground_check.test.required_count", groundCheck.getRequiredCount());
+            config.set("ground_check.test.y_avg", groundCheck.getYAvg());
+            config.set("ground_check.blocks_type", groundCheck.type.name().toLowerCase(Locale.ROOT));
             config.set("ground_check.blocks", groundCheck.blocks);
+            config.set("ground_check.biomes", groundCheck.biomes);
         }
 
         public static Generator deserialize(ConfigurationSection config) {
@@ -213,7 +231,6 @@ public class StructureConfig extends BukkitConfigDriver {
                     config.getBoolean("enable", false),
                     config.getInt("chances.value", 500),
                     config.getStringList("worlds"),
-                    config.getStringList("biomes"),
                     Optional.ofNullable(config.getConfigurationSection("bottom_fill"))
                             .map(sec -> {
                                 Map<String, String> biomeFill = Maps.newHashMap();
@@ -222,20 +239,27 @@ public class StructureConfig extends BukkitConfigDriver {
                             })
                             .orElseGet(Maps::newHashMap),
                     Optional.ofNullable(config.getConfigurationSection("ground_check"))
-                            .map(sec -> {
-                                GroundCheck.Type type = Optional.ofNullable(sec.getString("type"))
-                                        .map(s -> s.toUpperCase(Locale.ROOT))
-                                        .map(s -> {
-                                            try {
-                                                return GroundCheck.Type.valueOf(s);
-                                            } catch (IllegalArgumentException e) {
-                                                return GroundCheck.Type.WHITELIST;
-                                            }
-                                        })
-                                        .orElse(GroundCheck.Type.WHITELIST);
-                                return new GroundCheck(type, sec.getStringList("blocks"));
-                            })
-                            .orElseGet(() -> new GroundCheck(GroundCheck.Type.BLACKLIST, Lists.newArrayList()))
+                            .map(sec -> new GroundCheck(
+                                    sec.getInt("test.count", 8),
+                                    sec.getInt("test.required_count", 4),
+                                    sec.getInt("test.distance", 16),
+                                    sec.getInt("test.y_avg", 8),
+                                    Optional.ofNullable(sec.getString("blocks_type"))
+                                            .map(s -> s.toUpperCase(Locale.ROOT))
+                                            .map(s -> {
+                                                try {
+                                                    return GroundCheck.Type.valueOf(s);
+                                                } catch (IllegalArgumentException e) {
+                                                    return GroundCheck.Type.WHITELIST;
+                                                }
+                                            })
+                                            .orElse(GroundCheck.Type.WHITELIST),
+                                    sec.getStringList("blocks"),
+                                    sec.getStringList("biomes")
+                                    ))
+                            .orElseGet(() -> new GroundCheck(8, 4, 16, 8, GroundCheck.Type.BLACKLIST, Lists.newArrayList(), Lists.newArrayList())),
+                    config.getInt("size", 4),
+                    config.getBoolean("random_rotate", false)
             );
         }
 
@@ -243,15 +267,58 @@ public class StructureConfig extends BukkitConfigDriver {
         public static class GroundCheck {
 
             public enum Type {
-                WHITELIST, BLACKLIST
+                WHITELIST, BLACKLIST;
+
             }
 
+            private int count;
+            private int requiredCount;
+            private int distance;
+            private int yAvg;
             private Type type;
             private final List<String> blocks;
+            private final List<String> biomes;
 
-            public GroundCheck(Type type, List<String> blocks) {
-                this.type = type;
+            public GroundCheck(int count, int requiredCount, int distance, int yAvg, Type blocksType, List<String> blocks, List<String> biomes) {
+                this.count = count;
+                this.requiredCount = requiredCount;
+                this.distance = distance;
+                this.yAvg = yAvg;
+                this.type = blocksType;
                 this.blocks = blocks;
+                this.biomes = biomes;
+            }
+
+            public int getCount() {
+                return count;
+            }
+
+            public void setCount(int count) {
+                this.count = count;
+            }
+
+            public int getRequiredCount() {
+                return requiredCount;
+            }
+
+            public void setRequiredCount(int requiredCount) {
+                this.requiredCount = requiredCount;
+            }
+
+            public int getDistance() {
+                return distance;
+            }
+
+            public void setDistance(int distance) {
+                this.distance = distance;
+            }
+
+            public int getYAvg() {
+                return yAvg;
+            }
+
+            public void setYAvg(int y) {
+                this.yAvg = y;
             }
 
             public Type getType() {
@@ -262,8 +329,26 @@ public class StructureConfig extends BukkitConfigDriver {
                 this.type = type;
             }
 
-            public List<String> locks() {
+            public List<String> blocks() {
                 return blocks;
+            }
+
+            public List<String> biomes() {
+                return biomes;
+            }
+
+            public boolean containsBlock(String blockKey) {
+                return blocks
+                        .stream()
+                        .map(s -> s.contains(":") ? s : "minecraft:" + s)
+                        .anyMatch(s -> s.equalsIgnoreCase(blockKey));
+            }
+
+            public boolean containsBiome(String biomeKey) {
+                return biomes
+                        .stream()
+                        .map(s -> s.contains(":") ? s : "minecraft:" + s)
+                        .anyMatch(s -> s.equalsIgnoreCase(biomeKey));
             }
 
         }

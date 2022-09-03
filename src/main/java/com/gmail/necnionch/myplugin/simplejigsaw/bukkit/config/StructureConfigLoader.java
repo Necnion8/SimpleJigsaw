@@ -49,5 +49,9 @@ public class StructureConfigLoader {
                 .collect(Collectors.toMap(StructureConfig.Schematics::getName, c -> c));
     }
 
+    public Map<String, StructureConfig> structures() {
+        return configList;
+    }
+
 
 }

@@ -3,15 +3,18 @@ package com.gmail.necnionch.myplugin.simplejigsaw.bukkit;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.commands.MainCommand;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfig;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfigLoader;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.generator.StructureGenerator;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.WorldEditBridge;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawPart;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.listeners.ChunkListener;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.nms.NMSHandler;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.SchematicPool;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.StructureBuilder;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.TickUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,6 +26,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
     private static SimpleJigsawPlugin instance;
     private final WorldEditBridge worldEditBridge = new WorldEditBridge(this);
     private final StructureConfigLoader structuresLoader = new StructureConfigLoader();
+    private final StructureGenerator structureGenerator = new StructureGenerator(this, structuresLoader);
 
     @Override
     public void onEnable() {
@@ -31,8 +35,28 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
             getLogger().warning("NMS disabled! (ignored it)");
 
         MainCommand.registerCommand(this);
-        getServer().getPluginManager().registerEvents(new ChunkListener(this), this);
+        getServer().getPluginManager().registerEvents(new ChunkListener(this, structureGenerator), this);
         reload();
+
+        Optional.ofNullable(Bukkit.getPlayer("Necnion8")).ifPresent(p -> {
+//            AtomicLong delay = new AtomicLong(System.currentTimeMillis());
+//            Bukkit.getScheduler().runTaskTimer(this, task -> {
+//                if (!p.isOnline()) {
+//                    task.cancel();
+//                    return;
+//                }
+//                long d = System.currentTimeMillis() - delay.get();
+//                delay.set(System.currentTimeMillis());
+//
+//
+//                long value = Math.abs(50 - d);
+//
+//                p.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("" + d + " ms" + " / " + value + " ms"));
+//
+//            }, 0, 0);
+        });
+
+        new TickUtils(this).start();
     }
 
     @Override
@@ -71,8 +95,14 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
         return Collections.unmodifiableMap(structuresLoader.getStructures());
     }
 
+
+    private final Map<String, Map<String, List<JigsawPart>>> cachedPartsOfPool = Maps.newHashMap();
+
     public StructureBuilder createStructureBuilder(StructureConfig.Schematics schematics, int maxSize, boolean clearStructures) {
         Map<String, List<JigsawPart>> partsOfPool = Maps.newHashMap();
+
+        if (cachedPartsOfPool.containsKey(schematics.getName()))
+            return new StructureBuilder(schematics, maxSize, cachedPartsOfPool.get(schematics.getName()));
 
         schematics.getPools().forEach((poolName, pool) -> {
             pool.getSchematics().forEach(schematic -> {
@@ -91,6 +121,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
             });
         });
 
+        cachedPartsOfPool.put(schematics.getName(), partsOfPool);
         return new StructureBuilder(schematics, maxSize, partsOfPool);
     }
 
