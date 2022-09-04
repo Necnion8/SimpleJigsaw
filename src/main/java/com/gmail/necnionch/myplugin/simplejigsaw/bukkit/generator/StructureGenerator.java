@@ -11,7 +11,6 @@ import com.google.common.collect.Lists;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.function.operation.Operations;
-import com.sk89q.worldedit.math.BlockVector3;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -162,22 +161,30 @@ public class StructureGenerator {
         if (generator.isRandomRotate())
             angle = new Random().nextInt(4) * 90;
 
+        buildLocations.add(center);
         try (EditSession session = SimpleJigsawPlugin.getWorldEdit().newEditSession(world)) {
             long processTime = System.currentTimeMillis();
-            int generatedParts = builder.build(session, new Random(), bUtils.toBlockVector3(center), angle, operations);
-            getLogger().info("Generated " + schematics.getName() + " structure (" + generatedParts + " parts, " + (System.currentTimeMillis() - processTime) + " ms)");
+            StructureBuilder.WorldEditBuild build = builder.createBuild(session, new Random(), bUtils.toBlockVector3(center), angle);
+//            int generatedParts = (int) build
+//            getLogger().info("Generated " + schematics.getName() + " structure (" + generatedParts + " parts, " + (System.currentTimeMillis() - processTime) + " ms)");
+
+            builds.add(build);
+            getLogger().info("Pre-generated " + schematics.getName() + " structure (" + build.getParts() + " parts, " + (System.currentTimeMillis() - processTime) + " ms");
+
             queue();
 
-        } catch (WorldEditException e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
 
 
     }
 
-
-    private final List<StructureBuilder.WorldEditOperation> operations = Lists.newArrayList();
+    public final List<Location> buildLocations = Lists.newArrayList();
+//    private final List<StructureBuilder.WorldEditOperation> operations = Lists.newArrayList();
+    private final List<StructureBuilder.WorldEditBuild> builds = Lists.newArrayList();
     private boolean building;
+    private StructureBuilder.WorldEditBuild selectedBuild;
 
     public void queue() {
 //        this.operations.addAll(operations);
@@ -186,58 +193,86 @@ public class StructureGenerator {
             doBuild();
     }
 
-    private List<Long> delayList = Lists.newArrayList();
+    private static List<long[]> delayList = Lists.newArrayList();
 
     private void doBuild() {
-        StructureBuilder.WorldEditOperation e = selectNearestOperation();
-        if (e == null) {
-            building = false;
-            return;
+        StructureBuilder.WorldEditBuild b;
+
+        if (selectedBuild != null) {
+            b = selectedBuild;
+
+        } else {
+            b = selectNearestBuild();
+            if (b == null) {
+                building = false;
+                return;
+            }
         }
 
         building = true;
-        operations.remove(e);
+//        builds.remove(b);
 
-        int distance = e.getBukkitWorld().getEntitiesByClass(Player.class).stream()
-                .mapToInt(p -> (int) e.getPosition().distance(BlockVector3.at(p.getLocation().getBlockX(), p.getLocation().getBlockY(), p.getLocation().getBlockZ())))
+        int distance = b.getWorld().getEntitiesByClass(Player.class).stream()
+                .mapToInt(p -> (int) b.getLocation().distance(p.getLocation()))
                 .min().orElse(Integer.MAX_VALUE);
 
-        getLogger().warning("starting           build #" + e.getIndex() + " (waited " + operations.size() + " orders, nearest " + distance + "m)");
+        int totalParts = builds.stream().mapToInt(b2 -> b2.operations().size()).sum();
+
+        getLogger().warning("starting           build (waited " + builds.size() + " builds, total " + totalParts + " parts, nearest " + distance + "m)");
         long startAt = System.currentTimeMillis();
         try {
-            Operations.complete(e.getOperation());
+            Operations.complete(b.operations().remove(0).getOperation());
+//            b.start();
         } catch (WorldEditException ex) {
             ex.printStackTrace();
+        }
+        if (b.operations().isEmpty()) {
+            builds.remove(b);
+            selectedBuild = null;
         }
         getLogger().info("completed build " + (System.currentTimeMillis() - startAt));
 
 
-        long delay = Math.max(0, TickUtils.getDelay() - 25);  // t - 50
+        long delay = TickUtils.getDelay();
+        delay = avgDelay(delay >= 50 ? delay - 50 : delay);
+//        long delay = Math.max(0, TickUtils.getDelay() - 50);  // t - 50
 
 //        float value = (delay / -50f + 1) * 10;
-        long value = avgDelay(delay);
-        value = Math.round(value / 50f);
+//        long value = avgDelay(delay);
+        long value = Math.max(0, delay - 25);  //  - 20);
+        long tick = Math.round(value / 50f);
 
-        getLogger().severe("               delay tick: " + value);
+        getLogger().severe("               delay tick: " + tick + " | avg: " + value + " ms");
 
         // 50ms = 1tick  => 0 delay
         // 10ms = skip   => 4
         //  0ms = skip   => 10 delay
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> doBuild(), (int) value);
+//        tick = Math.min(2, tick);  // max 2tick delay
+        if (tick == 0)
+            delayList.add(new long[] { System.currentTimeMillis(), 50 + value });
+
+        plugin.getServer().getScheduler().runTaskLater(plugin, this::doBuild, tick);
     }
 
-    private @Nullable StructureBuilder.WorldEditOperation selectNearestOperation() {
-        return operations.stream().min(Comparator.comparingDouble(op -> op.getBukkitWorld().getEntitiesByClass(Player.class).stream()
-                .mapToInt(e -> (int) op.getPosition().distance(BlockVector3.at(e.getLocation().getBlockX(), e.getLocation().getBlockY(), e.getLocation().getBlockZ())))
+    private @Nullable StructureBuilder.WorldEditBuild selectNearestBuild() {
+        return builds.stream().min(Comparator.comparingDouble(op -> op.getWorld().getEntitiesByClass(Player.class).stream()
+                .mapToInt(e -> (int) op.getLocation().distance(e.getLocation()))
                 .min().orElse(Integer.MAX_VALUE))).orElse(null);
     }
 
     private long avgDelay(long newValue) {
-        if (delayList.size() >= 64)
-            delayList.remove(0);
-        delayList.add(newValue);
-
-        return delayList.stream().mapToLong(value -> value).sum() / delayList.size();
+        delayList.removeIf(tim -> System.currentTimeMillis() - tim[0] > 1000 * 10);
+        delayList.add(new long[] { System.currentTimeMillis(), newValue });
+        sampleSize = delayList.size();
+        return delayList.stream().mapToLong(value -> value[1]).sum() / delayList.size();
     }
+
+    public static int sampleSize;
+
+    public static void clear() {
+        delayList.removeIf(tim -> System.currentTimeMillis() - tim[0] > 1000 * 10);
+        sampleSize = delayList.size();
+    }
+
 
 }

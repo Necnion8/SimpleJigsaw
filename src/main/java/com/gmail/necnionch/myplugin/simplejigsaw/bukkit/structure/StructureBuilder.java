@@ -25,6 +25,7 @@ import com.sk89q.worldedit.world.World;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Color;
+import org.bukkit.Location;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -140,21 +141,25 @@ public class StructureBuilder {
         return parts.get(new Random().nextInt(parts.size()));
     }
 
-    public int build(EditSession session, BlockVector3 position, int angle) throws WorldEditException {
-       return build(session, new Random(), position, angle);
-    }
-
-    public int build(EditSession session, Random random, BlockVector3 position, int angle) throws WorldEditException {
+    public int startBuild(EditSession session, Random random, BlockVector3 position, int angle) throws WorldEditException {
         List<WorldEditOperation> operations = Lists.newArrayList();
-        int builds = build(session, random, position, angle, operations);
+        int parts = build(session, random, position, angle, operations);
 
         for (WorldEditOperation e : operations) {
             Operations.complete(e.getOperation());
         }
-        return builds;
+        return parts;
     }
 
-    public int build(EditSession session, Random random, BlockVector3 position, int angle, List<WorldEditOperation> operations) throws WorldEditException {
+    public WorldEditBuild createBuild(EditSession session, Random random, BlockVector3 position, int angle) {
+        List<WorldEditOperation> operations = Lists.newArrayList();
+        int parts = build(session, random, position, angle, operations);
+        org.bukkit.World world = BukkitAdapter.adapt(session.getWorld());
+        Location location = new Location(world, position.getX(), position.getY(), position.getZ());
+        return new WorldEditBuild(world, location, operations, parts);
+    }
+
+    private int build(EditSession session, Random random, BlockVector3 position, int angle, List<WorldEditOperation> operations) {
         if (firstPart == null)
             firstPart = getRandomPartFromStartPool();
         if (firstPart == null)
@@ -188,7 +193,7 @@ public class StructureBuilder {
     }
 
 
-    private int expandJigsawPart(ConnectInstance connect) throws WorldEditException {
+    private int expandJigsawPart(ConnectInstance connect) {
         JigsawConnector.Orientation orient = connect.getOppositeOrientation();  // 接続先に繋がる向き
         BlockVector3 position = connect.getPosition();  // 接続先に繋がる位置 (つまりここorigin)
 
@@ -272,7 +277,7 @@ public class StructureBuilder {
         return results;
     }
 
-    private int buildJigsawConnectors(EditSession session, Random random, JigsawPart part, BlockVector3 position, int angle, int size, List<WorldEditOperation> operations) throws WorldEditException {
+    private int buildJigsawConnectors(EditSession session, Random random, JigsawPart part, BlockVector3 position, int angle, int size, List<WorldEditOperation> operations) {
         // 含まれるConnectorを探し、次のパーツのために座標をもとめる
         int results = 0;
 
@@ -556,4 +561,44 @@ public class StructureBuilder {
         }
 
     }
+
+    public static class WorldEditBuild {
+
+        private final org.bukkit.World world;
+        private final Location location;
+        private final List<WorldEditOperation> operations;
+        private final int parts;
+
+        public WorldEditBuild(org.bukkit.World world, Location location, List<WorldEditOperation> operations, int parts) {
+            this.world = world;
+            this.location = location;
+            this.operations = operations;
+            this.parts = parts;
+        }
+
+        public org.bukkit.World getWorld() {
+            return world;
+        }
+
+        public Location getLocation() {
+            return location;
+        }
+
+        public List<WorldEditOperation> operations() {
+            return operations;
+        }
+
+        public int getParts() {
+            return parts;
+        }
+
+        public int start() throws WorldEditException {
+            for (WorldEditOperation e : operations) {
+                Operations.complete(e.getOperation());
+            }
+            return parts;
+        }
+
+    }
+
 }

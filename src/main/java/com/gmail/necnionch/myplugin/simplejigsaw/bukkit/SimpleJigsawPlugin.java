@@ -14,13 +14,20 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.TickUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public final class SimpleJigsawPlugin extends JavaPlugin {
     private static SimpleJigsawPlugin instance;
@@ -37,6 +44,28 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
         MainCommand.registerCommand(this);
         getServer().getPluginManager().registerEvents(new ChunkListener(this, structureGenerator), this);
         reload();
+
+        getServer().getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onPrecommand(PlayerCommandPreprocessEvent event) {
+                if (event.getMessage().equalsIgnoreCase("/checkstruc")) {
+                    event.setCancelled(true);
+
+                    Player p = event.getPlayer();
+                    List<Location> entries = structureGenerator.buildLocations.stream()
+                            .sorted(Comparator.comparingDouble(l -> l.distance(p.getLocation())))
+                            .collect(Collectors.toList());
+                    p.sendMessage(ChatColor.GOLD + "structure " + entries.size() + " generated");
+                    for (int i = 0; i < entries.size(); i++) {
+                        Location loc = entries.get(i);
+                        p.sendMessage(String.format("- %d %d %d (%dm)", loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), (int) p.getLocation().distance(loc)));
+                        if (i >= 9)
+                            break;
+                    }
+
+                }
+            }
+        }, this);
 
         Optional.ofNullable(Bukkit.getPlayer("Necnion8")).ifPresent(p -> {
 //            AtomicLong delay = new AtomicLong(System.currentTimeMillis());

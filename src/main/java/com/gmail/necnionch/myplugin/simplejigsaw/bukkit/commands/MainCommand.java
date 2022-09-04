@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.logging.Logger;
 
 public class MainCommand extends RootCommand {
@@ -153,7 +154,7 @@ public class MainCommand extends RootCommand {
 
         try (EditSession session = worldEdit.newEditSession(location.getWorld())) {
             long processTime = System.currentTimeMillis();
-            int generatedParts = builder.build(session, bUtils.toBlockVector3(location), 0);
+            int generatedParts = builder.createBuild(session, new Random(), bUtils.toBlockVector3(location), 0).start();
             getLogger().info("Generated " + structureName + " structure (" + generatedParts + " parts, " + (System.currentTimeMillis() - processTime) + " ms)");
             sendTo(sender, ChatColor.GOLD + "ストラクチャから " + generatedParts + " パーツを生成しました " + ChatColor.GRAY + "(" + (System.currentTimeMillis() - processTime) + " ms)");
 

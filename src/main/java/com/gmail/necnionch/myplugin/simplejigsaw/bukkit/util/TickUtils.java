@@ -1,6 +1,7 @@
 package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util;
 
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.generator.StructureGenerator;
 import com.google.common.collect.Lists;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
@@ -15,7 +16,8 @@ public class TickUtils {
     private final SimpleJigsawPlugin plugin;
     private static TickUtils instance;
     private BukkitTask timer;
-    private List<Long> ticks = Lists.newArrayList();
+//    private List<Long> ticks = Lists.newArrayList();
+    private List<long[]> ticks = Lists.newArrayList();
     private long lastTick;
     private int lastDelay;
 
@@ -30,17 +32,21 @@ public class TickUtils {
     public void start() {
         lastTick = System.currentTimeMillis();
         timer = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
-            if (ticks.size() >= 100)
-                ticks.remove(0);
-            ticks.add(System.currentTimeMillis() - lastTick);
+            ticks.removeIf(tim -> System.currentTimeMillis() - tim[0] > 1000 * 10);
+//            if (ticks.size() >= 100)
+//                ticks.remove(0);
+
+            ticks.add(new long[] {System.currentTimeMillis(), System.currentTimeMillis() - lastTick});
             lastTick = System.currentTimeMillis();
 
             Optional.ofNullable(Bukkit.getPlayer("Necnion8")).ifPresent(p -> {
-                long sum = ticks.stream().mapToLong(value -> value).sum();
+                long sum = ticks.stream().mapToLong(value -> value[1]).sum();
 //                System.out.println("" + sum);
                 float avg = sum / (float) ticks.size();
                 lastDelay = (int) avg;
-                String s = String.format("%dms", Math.round(avg));
+
+                StructureGenerator.clear();
+                String s = String.format("%dms - %d", Math.round(avg), StructureGenerator.sampleSize);
 
                 if (a) {
                     s = ChatColor.GOLD + "　     " + ChatColor.RESET + s + "     　";
