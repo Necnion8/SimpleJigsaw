@@ -42,7 +42,8 @@ public class TickUtils {
     }
 
     public static long getAvgDelay() {
-        instance.ticks.removeIf(tim -> System.currentTimeMillis() - tim[0] > 1000 * 10);
+        if (instance.ticks.isEmpty())
+            return System.currentTimeMillis() - instance.lastTick;
         long value = 0;
         for (long[] tick : instance.ticks) {
             value += tick[1];

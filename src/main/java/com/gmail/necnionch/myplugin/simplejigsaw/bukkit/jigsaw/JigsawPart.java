@@ -63,7 +63,7 @@ public class JigsawPart {
                     this.connectors.add(connector);
 
                     String finalBlockState = connector.getFinalBlockState();
-                    NamespacedKey namespacedKey = NamespacedKey.fromString(finalBlockState);
+                    NamespacedKey namespacedKey = NamespacedKey.fromString(finalBlockState);  // todo: blockStateも適用する
                     finalBlockState = (namespacedKey != null) ? namespacedKey.toString() : "minecraft:air";
 
                     BlockType finalBlockType;

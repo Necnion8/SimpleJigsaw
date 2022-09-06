@@ -7,7 +7,6 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.StructureBuild
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.CommandBukkit;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.CommandSender;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.RootCommand;
-import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
 import net.md_5.bungee.api.ChatColor;
@@ -21,9 +20,7 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.logging.Logger;
 
 public class MainCommand extends RootCommand {
@@ -137,8 +134,8 @@ public class MainCommand extends RootCommand {
             return;
         }
 
-        StructureConfig.Schematics schematics = plugin.getStructureByName(structureName);
-        if (schematics == null) {
+        StructureConfig structure = plugin.getStructureByName(structureName);
+        if (structure == null || structure.getSchematics() == null) {
             sendTo(sender, ChatColor.RED + "ストラクチャ " + structureName + " はロードされていません");
             return;
         }
@@ -149,11 +146,15 @@ public class MainCommand extends RootCommand {
         } catch (IndexOutOfBoundsException | NumberFormatException ignored) {
         }
 
-        StructureBuilder builder = plugin.createStructureBuilder(schematics, maxSize, !debugBuild);
+        Map<String, String> fill = Optional.ofNullable(structure.getGenerator())
+                .map(StructureConfig.Generator::bottomFill)
+                .orElseGet(Collections::emptyMap);
 
-        try (EditSession session = worldEdit.newEditSession(location.getWorld())) {
+        StructureBuilder builder = plugin.createStructureBuilder(structure.getSchematics(), maxSize, !debugBuild);
+
+        try {
             long processTime = System.currentTimeMillis();
-            int generatedParts = builder.createBuild(location.getWorld(), new Random(), location, 0).start();
+            int generatedParts = builder.createBuild(location.getWorld(), new Random(), location, 0, fill).start();
             getLogger().info("Generated " + structureName + " structure (" + generatedParts + " parts, " + (System.currentTimeMillis() - processTime) + " ms)");
             sendTo(sender, ChatColor.GOLD + "ストラクチャから " + generatedParts + " パーツを生成しました " + ChatColor.GRAY + "(" + (System.currentTimeMillis() - processTime) + " ms)");
 
@@ -165,7 +166,7 @@ public class MainCommand extends RootCommand {
 
     private @NotNull List<String> completeTestBuild(CommandSender sender, String label, List<String> args) {
         if (args.size() == 1) {
-            return generateSuggests(args.get(0), plugin.getStructures().keySet().toArray(new String[0]));
+            return generateSuggests(args.get(0), plugin.getSchematics().keySet().toArray(new String[0]));
         }
         return Collections.emptyList();
     }

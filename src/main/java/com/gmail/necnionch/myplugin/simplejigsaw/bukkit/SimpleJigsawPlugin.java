@@ -97,7 +97,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
     public void reload() {
         structuresLoader.loadAll(this);
 
-        Collection<StructureConfig.Schematics> schematics = structuresLoader.getStructures().values();
+        Collection<StructureConfig.Schematics> schematics = structuresLoader.getSchematics().values();
         File schematicsDir = new File(getDataFolder(), "schematics");
 
         //noinspection ResultOfMethodCallIgnored
@@ -118,12 +118,20 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
         getLogger().info("Loaded " + schematics.size() + " structure settings");
     }
 
-    public @Nullable StructureConfig.Schematics getStructureByName(String name) {
-        return structuresLoader.getStructures().get(name);
+    public @Nullable StructureConfig.Schematics getSchematicsByName(String name) {
+        return structuresLoader.getSchematics().get(name);
     }
 
-    public Map<String, StructureConfig.Schematics> getStructures() {
-        return Collections.unmodifiableMap(structuresLoader.getStructures());
+    public Map<String, StructureConfig.Schematics> getSchematics() {
+        return Collections.unmodifiableMap(structuresLoader.getSchematics());
+    }
+
+    public @Nullable StructureConfig getStructureByName(String name) {
+        return structuresLoader.structures().get(name);
+    }
+
+    public Map<String, StructureConfig> getStructures() {
+        return Collections.unmodifiableMap(structuresLoader.structures());
     }
 
 

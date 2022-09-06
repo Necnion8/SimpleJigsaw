@@ -7,7 +7,6 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.StructureBuild
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.BiomeUtils;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.TickUtils;
 import com.google.common.collect.Lists;
-import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.function.operation.Operations;
 import org.bukkit.*;
@@ -140,54 +139,30 @@ public class StructureGenerator {
     }
 
     public void build(StructureConfig.Generator generator, StructureConfig.Schematics schematics, World world, Location center) {
-//        getLogger().warning("build : " + center);
-//
-//        AtomicInteger y = new AtomicInteger(255);
-//        Bukkit.getScheduler().runTaskTimer(plugin, task -> {
-//            int v = y.get();
-//            y.set(v - 1);
-//            if (v <= 50) {
-//                task.cancel();
-//                return;
-//            }
-//            world.getBlockAt(center.getBlockX(), v, center.getBlockZ()).setType(Material.REDSTONE_BLOCK);
-//
-//        }, 0, 1);
-
         StructureBuilder builder = plugin.createStructureBuilder(schematics, generator.getSize(), true);
 
         int angle = 0;
         if (generator.isRandomRotate())
             angle = new Random().nextInt(4) * 90;
 
+        long processTime = System.currentTimeMillis();
+
         buildLocations.add(center);
-        try (EditSession session = SimpleJigsawPlugin.getWorldEdit().newEditSession(world)) {
-            long processTime = System.currentTimeMillis();
-            StructureBuilder.WorldEditBuild build = builder.createBuild(world, new Random(), center, angle);
-//            int generatedParts = (int) build
-//            getLogger().info("Generated " + schematics.getName() + " structure (" + generatedParts + " parts, " + (System.currentTimeMillis() - processTime) + " ms)");
+        StructureBuilder.WorldEditBuild build = builder.createBuild(world, new Random(), center, angle, generator.bottomFill());
 
-            builds.add(build);
-            getLogger().info("Pre-generated " + schematics.getName() + " structure (" + build.getParts() + " parts, " + (System.currentTimeMillis() - processTime) + " ms)");
+        builds.add(build);
+        getLogger().info("Pre-generated " + schematics.getName() + " structure (" + build.getParts() + " parts, " + (System.currentTimeMillis() - processTime) + " ms)");
 
-            queue();
-
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
-
+        queue();
 
     }
 
     public final List<Location> buildLocations = Lists.newArrayList();
-//    private final List<StructureBuilder.WorldEditOperation> operations = Lists.newArrayList();
     private final List<StructureBuilder.WorldEditBuild> builds = Lists.newArrayList();
     private boolean building;
     private StructureBuilder.WorldEditBuild selectedBuild;
 
     public void queue() {
-//        this.operations.addAll(operations);
-
         if (!building)
             doBuild();
     }
@@ -218,7 +193,7 @@ public class StructureGenerator {
         getLogger().warning("starting           build (waited " + builds.size() + " builds, total " + totalParts + " parts, nearest " + distance + "m)");
         long startAt = System.currentTimeMillis();
         try {
-            Operations.complete(b.operations().remove(0).getOperation());
+            Operations.complete(b.operations().remove(0));
 //            b.start();
         } catch (WorldEditException ex) {
             ex.printStackTrace();
@@ -230,7 +205,7 @@ public class StructureGenerator {
         getLogger().info("completed build " + (System.currentTimeMillis() - startAt));
 
 
-        long avg = TickUtils.getAvgDelay();
+        long avg = TickUtils.getAvgDelay();  // todo: 古い遅延処理をロールバックする
         long tick = Math.max(0, (avg - 30) / 25);
         getLogger().severe("               delay tick: " + tick + " | " + avg + " ms");
         plugin.getServer().getScheduler().runTaskLater(plugin, this::doBuild, tick);

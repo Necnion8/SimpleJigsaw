@@ -40,7 +40,7 @@ public class StructureConfigLoader {
         }
     }
 
-    public Map<String, StructureConfig.Schematics> getStructures() {
+    public Map<String, StructureConfig.Schematics> getSchematics() {
         return configList
                 .values()
                 .stream()
