@@ -5,6 +5,7 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfig;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.WorldEditBridge;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.SchematicPool;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.ExtentIterator;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.worldedit.WorldEditException;
@@ -18,6 +19,7 @@ import org.bukkit.NamespacedKey;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -28,7 +30,7 @@ public class JigsawPart {
     private final StructureConfig.Schematics schematics;
     private final SchematicPool.Entry schematic;
     private final Clipboard clipboard;
-    private final Set<JigsawConnector> connectors = Sets.newHashSet();
+    private final List<JigsawConnector> connectors = Lists.newArrayList();
     private final BlockVector3 origin;
     private final Set<BlockVector3> filledBlockLocations = Sets.newHashSet();
 
@@ -112,8 +114,8 @@ public class JigsawPart {
         return clipboard.getRegion().getMaximumPoint().subtract(clipboard.getRegion().getMinimumPoint()).add(1, 1, 1);
     }
 
-    public Set<JigsawConnector> getConnectors() {
-        return Collections.unmodifiableSet(connectors);
+    public List<JigsawConnector> getConnectors() {
+        return Collections.unmodifiableList(connectors);
     }
 
     public BlockVector3 toRelativeLocation(BlockVector3 location) {

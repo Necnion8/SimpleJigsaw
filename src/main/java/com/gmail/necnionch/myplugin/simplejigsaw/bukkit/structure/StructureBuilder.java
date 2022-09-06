@@ -134,7 +134,7 @@ public class StructureBuilder {
 
         String poolName = pool.getName();
         List<JigsawPart> parts = partsOfPool.get(poolName);
-        if (parts.isEmpty())
+        if (parts == null || parts.isEmpty())
             return null;
 
         return parts.get(new Random().nextInt(parts.size()));
@@ -293,7 +293,7 @@ public class StructureBuilder {
 
             // 現在の位置に足す
             pos = pos.add(jigsawRel);  // .transform2D(angle, 0, 0, 0, 0));
-            showParticle(pos, world, Color.ORANGE);
+            showParticle(pos, world, Color.LIME);
 
             // ジグソーの向きから現在の角度より回転角度を計算
             int newAngle = angle + ori.getOpposite().getAngle();
@@ -435,8 +435,8 @@ public class StructureBuilder {
         return new ConflictTestResult(locations, conflicts);
     }
 
-    private void showParticle(BlockVector3 loc, World world, Color color) {
-//        org.bukkit.World world = com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(session.getWorld());
+    private void showParticle(BlockVector3 loc, World w, Color color) {
+//        org.bukkit.World world = com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(w);
 //        getLogger().info(color + ": " + loc);
 //        org.bukkit.Particle.DustOptions dust = new org.bukkit.Particle.DustOptions(color, 1);
 //        SimpleJigsawPlugin pl = org.bukkit.plugin.java.JavaPlugin.getPlugin(SimpleJigsawPlugin.class);
@@ -522,7 +522,6 @@ public class StructureBuilder {
         }
 
     }
-
 
     public static class WorldEditOperation {
 

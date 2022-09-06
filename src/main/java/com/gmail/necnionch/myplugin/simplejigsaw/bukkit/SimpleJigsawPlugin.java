@@ -127,7 +127,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
     }
 
 
-    private final Map<String, Map<String, List<JigsawPart>>> cachedPartsOfPool = Maps.newHashMap();
+    private final Map<String, Map<String, List<JigsawPart>>> cachedPartsOfPool = Maps.newHashMap();  // todo: unload cache
 
     public StructureBuilder createStructureBuilder(StructureConfig.Schematics schematics, int maxSize, boolean clearStructures) {
         Map<String, List<JigsawPart>> partsOfPool = Maps.newHashMap();
