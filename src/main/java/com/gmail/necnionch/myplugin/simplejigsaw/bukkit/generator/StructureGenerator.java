@@ -6,7 +6,6 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfigLo
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.StructureBuilder;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.BiomeUtils;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.TickUtils;
-import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.bUtils;
 import com.google.common.collect.Lists;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEditException;
@@ -164,12 +163,12 @@ public class StructureGenerator {
         buildLocations.add(center);
         try (EditSession session = SimpleJigsawPlugin.getWorldEdit().newEditSession(world)) {
             long processTime = System.currentTimeMillis();
-            StructureBuilder.WorldEditBuild build = builder.createBuild(session, new Random(), bUtils.toBlockVector3(center), angle);
+            StructureBuilder.WorldEditBuild build = builder.createBuild(world, new Random(), center, angle);
 //            int generatedParts = (int) build
 //            getLogger().info("Generated " + schematics.getName() + " structure (" + generatedParts + " parts, " + (System.currentTimeMillis() - processTime) + " ms)");
 
             builds.add(build);
-            getLogger().info("Pre-generated " + schematics.getName() + " structure (" + build.getParts() + " parts, " + (System.currentTimeMillis() - processTime) + " ms");
+            getLogger().info("Pre-generated " + schematics.getName() + " structure (" + build.getParts() + " parts, " + (System.currentTimeMillis() - processTime) + " ms)");
 
             queue();
 
@@ -192,8 +191,6 @@ public class StructureGenerator {
         if (!building)
             doBuild();
     }
-
-    private static List<long[]> delayList = Lists.newArrayList();
 
     private void doBuild() {
         StructureBuilder.WorldEditBuild b;
@@ -233,24 +230,9 @@ public class StructureGenerator {
         getLogger().info("completed build " + (System.currentTimeMillis() - startAt));
 
 
-        long delay = TickUtils.getDelay();
-        delay = avgDelay(delay >= 50 ? delay - 50 : delay);
-//        long delay = Math.max(0, TickUtils.getDelay() - 50);  // t - 50
-
-//        float value = (delay / -50f + 1) * 10;
-//        long value = avgDelay(delay);
-        long value = Math.max(0, delay - 25);  //  - 20);
-        long tick = Math.round(value / 50f);
-
-        getLogger().severe("               delay tick: " + tick + " | avg: " + value + " ms");
-
-        // 50ms = 1tick  => 0 delay
-        // 10ms = skip   => 4
-        //  0ms = skip   => 10 delay
-//        tick = Math.min(2, tick);  // max 2tick delay
-        if (tick == 0)
-            delayList.add(new long[] { System.currentTimeMillis(), 50 + value });
-
+        long avg = TickUtils.getAvgDelay();
+        long tick = Math.max(0, (avg - 30) / 25);
+        getLogger().severe("               delay tick: " + tick + " | " + avg + " ms");
         plugin.getServer().getScheduler().runTaskLater(plugin, this::doBuild, tick);
     }
 
@@ -259,20 +241,5 @@ public class StructureGenerator {
                 .mapToInt(e -> (int) op.getLocation().distance(e.getLocation()))
                 .min().orElse(Integer.MAX_VALUE))).orElse(null);
     }
-
-    private long avgDelay(long newValue) {
-        delayList.removeIf(tim -> System.currentTimeMillis() - tim[0] > 1000 * 10);
-        delayList.add(new long[] { System.currentTimeMillis(), newValue });
-        sampleSize = delayList.size();
-        return delayList.stream().mapToLong(value -> value[1]).sum() / delayList.size();
-    }
-
-    public static int sampleSize;
-
-    public static void clear() {
-        delayList.removeIf(tim -> System.currentTimeMillis() - tim[0] > 1000 * 10);
-        sampleSize = delayList.size();
-    }
-
 
 }

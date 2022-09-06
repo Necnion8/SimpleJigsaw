@@ -4,7 +4,6 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfig;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.WorldEditBridge;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.StructureBuilder;
-import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.bUtils;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.CommandBukkit;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.CommandSender;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.RootCommand;
@@ -154,7 +153,7 @@ public class MainCommand extends RootCommand {
 
         try (EditSession session = worldEdit.newEditSession(location.getWorld())) {
             long processTime = System.currentTimeMillis();
-            int generatedParts = builder.createBuild(session, new Random(), bUtils.toBlockVector3(location), 0).start();
+            int generatedParts = builder.createBuild(location.getWorld(), new Random(), location, 0).start();
             getLogger().info("Generated " + structureName + " structure (" + generatedParts + " parts, " + (System.currentTimeMillis() - processTime) + " ms)");
             sendTo(sender, ChatColor.GOLD + "ストラクチャから " + generatedParts + " パーツを生成しました " + ChatColor.GRAY + "(" + (System.currentTimeMillis() - processTime) + " ms)");
 

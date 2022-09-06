@@ -34,6 +34,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
     private final WorldEditBridge worldEditBridge = new WorldEditBridge(this);
     private final StructureConfigLoader structuresLoader = new StructureConfigLoader();
     private final StructureGenerator structureGenerator = new StructureGenerator(this, structuresLoader);
+    private final TickUtils tickUtils = new TickUtils(this);
 
     @Override
     public void onEnable() {
@@ -85,11 +86,12 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
 //            }, 0, 0);
         });
 
-        new TickUtils(this).start();
+        tickUtils.start();
     }
 
     @Override
     public void onDisable() {
+        tickUtils.stop();
     }
 
     public void reload() {
