@@ -87,6 +87,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
         });
 
         tickUtils.start();
+        structureGenerator.task.runTaskTimer(this, 0, 0);
     }
 
     @Override

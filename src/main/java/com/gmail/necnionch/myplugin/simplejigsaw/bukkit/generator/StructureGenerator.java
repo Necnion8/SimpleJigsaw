@@ -5,14 +5,16 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfig;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfigLoader;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.StructureBuilder;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.BiomeUtils;
-import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.TickUtils;
 import com.google.common.collect.Lists;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.function.operation.Operations;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -204,12 +206,48 @@ public class StructureGenerator {
         }
         getLogger().info("completed build " + (System.currentTimeMillis() - startAt));
 
+//        System.out.println(System.currentTimeMillis() - lastTime);
+//        if (System.currentTimeMillis() - lastTime > 25) {
+//            lastTime = System.currentTimeMillis() - 50;
+//            plugin.getServer().getScheduler().runTaskLater(plugin, this::doBuild, 0);
+//            System.out.println("      delay tick 0");
+//        } else {
+//            lastTime = System.currentTimeMillis();
+//            plugin.getServer().getScheduler().runTaskLater(plugin, this::doBuild, 1);
+//            System.out.println("      delay tick 1");
+//        }
 
-        long avg = TickUtils.getAvgDelay();  // todo: 古い遅延処理をロールバックする
-        long tick = Math.max(0, (avg - 30) / 25);
-        getLogger().severe("               delay tick: " + tick + " | " + avg + " ms");
-        plugin.getServer().getScheduler().runTaskLater(plugin, this::doBuild, tick);
+//        long avg = TickUtils.getAvgDelay();  // todo: 古い遅延処理をロールバックする
+//        long tick = Math.max(0, (avg - 30) / 25);
+//        getLogger().severe("               delay tick: " + tick + " | " + avg + " ms");
+//        plugin.getServer().getScheduler().runTaskLater(plugin, this::doBuild, tick);
     }
+
+
+    long lastTime = 0;
+    public BukkitRunnable task = new BukkitRunnable() {
+        @Override
+        public void run() {
+            if (System.currentTimeMillis() - lastTime < 10) {  // Skip tick を考慮する (0:無し,0<:有り,10ms推奨)
+                getLogger().warning("Skipping 1 tick (delayed " + (System.currentTimeMillis() - lastTime) + "ms)");
+                lastTime = System.currentTimeMillis();
+                return;
+            }
+
+            int count = 0;
+            while (System.currentTimeMillis() - lastTime - 50 < 50 * 2 && building) {  // 1tickで処理していい時間 (2tick=100ms)
+                doBuild();
+                count++;
+            }
+            if (0 < count)
+                System.out.println("loooooooooooooooooooooooooooop tick process: " + count);
+            if (n != null)
+                n.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent("process: " + count));
+            lastTime = System.currentTimeMillis();
+        }
+    };
+
+    Player n = Bukkit.getPlayer("Necnion8");
 
     private @Nullable StructureBuilder.WorldEditBuild selectNearestBuild() {
         return builds.stream().min(Comparator.comparingDouble(op -> op.getWorld().getEntitiesByClass(Player.class).stream()
