@@ -9,3 +9,7 @@ commands:
   simplejigsaw:
     aliases: [sjigsaw]
     permission: simplejigsaw.command.simplejigsaw
+
+permissions:
+  simplejigsaw.debug:
+    default: op

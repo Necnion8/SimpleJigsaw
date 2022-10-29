@@ -18,6 +18,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -179,6 +180,9 @@ public class StructureGenerator {
             b = selectNearestBuild();
             if (b == null) {
                 building = false;
+                lastProcQueuedBuilds = 0;
+                lastProcTotalParts = 0;
+                lastProcNearestDistance = -1;
                 return;
             }
         }
@@ -192,7 +196,11 @@ public class StructureGenerator {
 
         int totalParts = builds.stream().mapToInt(b2 -> b2.operations().size()).sum();
 
-        getLogger().warning("starting           build (waited " + builds.size() + " builds, total " + totalParts + " parts, nearest " + distance + "m)");
+//        getLogger().warning("starting           build (waited " + builds.size() + " builds, total " + totalParts + " parts, nearest " + distance + "m)");
+        lastProcQueuedBuilds = builds.size();
+        lastProcTotalParts = totalParts;
+        lastProcNearestDistance = distance;
+
         long startAt = System.currentTimeMillis();
         try {
             Operations.complete(b.operations().remove(0));
@@ -224,35 +232,56 @@ public class StructureGenerator {
     }
 
 
-    long lastTime = 0;
+    private int skippedTicks;
+    private int lastProcQueuedBuilds;
+    private int lastProcTotalParts;
+    private int lastProcNearestDistance = -1;
+    private long lastProcTickTime;
+
     public BukkitRunnable task = new BukkitRunnable() {
         @Override
         public void run() {
-            if (System.currentTimeMillis() - lastTime < 10) {  // Skip tick を考慮する (0:無し,0<:有り,10ms推奨)
-                getLogger().warning("Skipping 1 tick (delayed " + (System.currentTimeMillis() - lastTime) + "ms)");
-                lastTime = System.currentTimeMillis();
+            if (System.currentTimeMillis() - lastProcTickTime < 8) {  // Skip tick を考慮する (0:無し,0<:有り,10ms推奨)
+                skippedTicks++;
+                sendDebugMessage(() -> String.format(
+                        "                     §cBP: §l%3d §b| §cP: §l%4d§c (%d) §b| §cD: §l%3dm§6 §n  skipped §l%2d§6§n ticks  ",
+                        0, lastProcTotalParts, lastProcQueuedBuilds, lastProcNearestDistance, skippedTicks
+                ));
+//                sendDebugMessage(() ->
+//                        ChatColor.GRAY.toString() + ChatColor.UNDERLINE + "                                 skipped " + skippedTicks + " ticks "
+//                );
+                lastProcTickTime = System.currentTimeMillis();
                 return;
             }
+            skippedTicks = 0;
 
             int count = 0;
-            while (System.currentTimeMillis() - lastTime - 50 < 50 * 2 && building) {  // 1tickで処理していい時間 (2tick=100ms)
+            while (System.currentTimeMillis() - lastProcTickTime - 50 < 50 * 2 && building) {  // 1tickで処理していい時間 (2tick=100ms)
                 doBuild();
                 count++;
             }
-            if (0 < count)
-                System.out.println("loooooooooooooooooooooooooooop tick process: " + count);
-            if (n != null)
-                n.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent("process: " + count));
-            lastTime = System.currentTimeMillis();
+
+            final int count2 = count;
+            sendDebugMessage(() -> String.format(" §cBP: §l%3d §b| §cP: §l%4d§c (%d) §b| §cD: §l%3dm",
+                    count2, lastProcTotalParts, lastProcQueuedBuilds, lastProcNearestDistance));
+            lastProcTickTime = System.currentTimeMillis();
         }
     };
-
-    Player n = Bukkit.getPlayer("Necnion8");
 
     private @Nullable StructureBuilder.WorldEditBuild selectNearestBuild() {
         return builds.stream().min(Comparator.comparingDouble(op -> op.getWorld().getEntitiesByClass(Player.class).stream()
                 .mapToInt(e -> (int) op.getLocation().distance(e.getLocation()))
                 .min().orElse(Integer.MAX_VALUE))).orElse(null);
+    }
+
+
+    private void sendDebugMessage(Supplier<String> print) {
+        if (SimpleJigsawPlugin.DEBUG_MODE && !Bukkit.getOnlinePlayers().isEmpty()) {
+            TextComponent message = new TextComponent(print.get());
+            Bukkit.getOnlinePlayers().stream()
+                    .filter(p -> p.hasPermission(SimpleJigsawPlugin.DEBUG_PERM))
+                    .forEach(p -> p.spigot().sendMessage(ChatMessageType.ACTION_BAR, message));
+        }
     }
 
 }

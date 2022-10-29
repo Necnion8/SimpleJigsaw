@@ -27,7 +27,6 @@ public class MainCommand extends RootCommand {
 
     private final SimpleJigsawPlugin plugin;
     private final WorldEditBridge worldEdit;
-    private boolean debugBuild;
 
 
     public MainCommand(SimpleJigsawPlugin plugin) {
@@ -38,11 +37,11 @@ public class MainCommand extends RootCommand {
         addCommand("testbuild", null, this::cmdTestBuild, this::completeTestBuild);
 
         addCommand("setdebug", null, (sender, args) -> {
-            debugBuild = !debugBuild;
-            if (debugBuild) {
-                sendTo(sender, "ジグソーブロックを残して生成します");
+            SimpleJigsawPlugin.DEBUG_MODE = !SimpleJigsawPlugin.DEBUG_MODE;
+            if (SimpleJigsawPlugin.DEBUG_MODE) {
+                sendTo(sender, "デバッグモードを有効にしました");
             } else {
-                sendTo(sender, "ジグソーブロックを残さず生成します");
+                sendTo(sender, "デバッグモードを無効にしました");
             }
         });
 
@@ -150,7 +149,7 @@ public class MainCommand extends RootCommand {
                 .map(StructureConfig.Generator::bottomFill)
                 .orElseGet(Collections::emptyMap);
 
-        StructureBuilder builder = plugin.createStructureBuilder(structure.getSchematics(), maxSize, !debugBuild);
+        StructureBuilder builder = plugin.createStructureBuilder(structure.getSchematics(), maxSize, SimpleJigsawPlugin.DEBUG_MODE);
 
         try {
             long processTime = System.currentTimeMillis();
