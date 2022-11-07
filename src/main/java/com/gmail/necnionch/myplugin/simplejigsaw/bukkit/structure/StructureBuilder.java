@@ -29,6 +29,8 @@ import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -170,12 +172,6 @@ public class StructureBuilder {
                         int x = Integer.parseInt(sp[0]);
                         int y = minY - 1;
                         int z = Integer.parseInt(sp[2]);
-                        int y2 = world.getHighestBlockAt(x, z).getY() - 1;
-//                        if (y2 <= y)
-//                            return null;
-
-                        CuboidRegion region = new CuboidRegion(BlockVector3.at(x, y, z), BlockVector3.at(x, y2, z));
-//                        System.out.println("" + region);
 
                         String biomeKey = BiomeUtils.getBiomeKeyByBlock(world.getBlockAt(x, y, z));
                         String blockTypeName;
@@ -190,6 +186,21 @@ public class StructureBuilder {
                         if (blockType == null)
                             return null;
 
+//                        int y2 = world.getHighestBlockAt(x, z).getY() - 1;
+//                        if (y2 < y)
+//                            return null;
+
+                        if (!world.getBlockAt(x, y, z).getType().isAir())
+                            return null;
+
+                        int y2 = y;
+                        while (world.getMinHeight() < y2) {
+                            Block block = world.getBlockAt(x, y2, z);
+                            if (!block.getType().isAir() && !Material.WATER.equals(block.getType()))
+                                break;
+                            y2--;
+                        }
+                        CuboidRegion region = new CuboidRegion(BlockVector3.at(x, y, z), BlockVector3.at(x, y2, z));
                         BlockReplace replace = new BlockReplace(BukkitAdapter.adapt(world), blockType.getDefaultState());
                         RegionVisitor visitor = new RegionVisitor(region, replace);
                         return (Operation) visitor;
