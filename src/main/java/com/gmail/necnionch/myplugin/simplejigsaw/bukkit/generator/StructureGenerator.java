@@ -75,7 +75,7 @@ public class StructureGenerator {
         // chances
         int chance = generator.getChanceValue();
         if (chance <= 0 || new Random().nextInt(chance) != 0) {
-            getLogger().info("test failed : chance");
+//            getLogger().info("test failed : chance");
             return null;
         }
 
@@ -127,13 +127,13 @@ public class StructureGenerator {
         }
 
         if (success < ground.getRequiredCount()) {
-            getLogger().info("test failed : ground");
+//            getLogger().info("test failed : ground");
             return null;
         }
 
         int yAvg = Math.abs(yMax - yMin - (ySum / success));
         if (yAvg > ground.getYAvg()) {
-            getLogger().info("test failed : avg y = " + yAvg);
+//            getLogger().info("test failed : avg y = " + yAvg);
             return null;
         }
 
