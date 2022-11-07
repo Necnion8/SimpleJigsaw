@@ -188,7 +188,6 @@ public class StructureGenerator {
         }
 
         building = true;
-//        builds.remove(b);
 
         int distance = b.getWorld().getEntitiesByClass(Player.class).stream()
                 .mapToInt(p -> (int) b.getLocation().distance(p.getLocation()))
@@ -196,15 +195,13 @@ public class StructureGenerator {
 
         int totalParts = builds.stream().mapToInt(b2 -> b2.operations().size()).sum();
 
-//        getLogger().warning("starting           build (waited " + builds.size() + " builds, total " + totalParts + " parts, nearest " + distance + "m)");
         lastProcQueuedBuilds = builds.size();
         lastProcTotalParts = totalParts;
         lastProcNearestDistance = distance;
 
-        long startAt = System.currentTimeMillis();
         try {
             Operations.complete(b.operations().remove(0));
-//            b.start();
+
         } catch (WorldEditException ex) {
             ex.printStackTrace();
         }
@@ -212,23 +209,6 @@ public class StructureGenerator {
             builds.remove(b);
             selectedBuild = null;
         }
-        getLogger().info("completed build " + (System.currentTimeMillis() - startAt));
-
-//        System.out.println(System.currentTimeMillis() - lastTime);
-//        if (System.currentTimeMillis() - lastTime > 25) {
-//            lastTime = System.currentTimeMillis() - 50;
-//            plugin.getServer().getScheduler().runTaskLater(plugin, this::doBuild, 0);
-//            System.out.println("      delay tick 0");
-//        } else {
-//            lastTime = System.currentTimeMillis();
-//            plugin.getServer().getScheduler().runTaskLater(plugin, this::doBuild, 1);
-//            System.out.println("      delay tick 1");
-//        }
-
-//        long avg = TickUtils.getAvgDelay();  // todo: 古い遅延処理をロールバックする
-//        long tick = Math.max(0, (avg - 30) / 25);
-//        getLogger().severe("               delay tick: " + tick + " | " + avg + " ms");
-//        plugin.getServer().getScheduler().runTaskLater(plugin, this::doBuild, tick);
     }
 
 
@@ -247,16 +227,13 @@ public class StructureGenerator {
                         "                     §cBP: §l%3d §b| §cP: §l%4d§c (%d) §b| §cD: §l%3dm§6 §n  skipped §l%2d§6§n ticks  ",
                         0, lastProcTotalParts, lastProcQueuedBuilds, lastProcNearestDistance, skippedTicks
                 ));
-//                sendDebugMessage(() ->
-//                        ChatColor.GRAY.toString() + ChatColor.UNDERLINE + "                                 skipped " + skippedTicks + " ticks "
-//                );
                 lastProcTickTime = System.currentTimeMillis();
                 return;
             }
             skippedTicks = 0;
 
             int count = 0;
-            while (System.currentTimeMillis() - lastProcTickTime - 50 < 50 * 2 && building) {  // 1tickで処理していい時間 (2tick=100ms)
+            while (System.currentTimeMillis() - lastProcTickTime - 50 < 50 * 3 && building) {  // 1tickで処理していい時間 (2tick=100ms)
                 doBuild();
                 count++;
             }

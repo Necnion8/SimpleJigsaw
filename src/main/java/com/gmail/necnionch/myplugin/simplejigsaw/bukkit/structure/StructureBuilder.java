@@ -46,8 +46,6 @@ public class StructureBuilder {
     private @Nullable Map<String, List<JigsawConnector>> poolOfConnectors;  // caching
     private @Nullable Map<String, List<JigsawConnector>> poolOfEndConnectors;  // caching
     private final Set<String> structuredBlockLocations = Sets.newHashSet();
-//    private final Set<BlockVector3> structuredBlockLocations2 = Sets.newHashSet();
-    private final List<BlockVector3> bottomFills = Lists.newArrayList();
 
     private final Set<BlockType> whitelistBlockTypes = BlockType.REGISTRY.values().stream()
             .filter(bType -> !bType.equals(BlockTypes.STRUCTURE_VOID))
@@ -162,9 +160,9 @@ public class StructureBuilder {
                     .map(s -> Integer.parseInt(s.split(",")[1]))
                     .min(Comparator.comparingInt(s -> s))
                     .orElse(location.getBlockY());
-            System.out.println("locY: " + location.getBlockY());
-            System.out.println("minY: " + minY);
-            System.out.println("" + structuredBlockLocations.size());
+//            System.out.println("locY: " + location.getBlockY());
+//            System.out.println("minY: " + minY);
+//            System.out.println("" + structuredBlockLocations.size());
             List<Operation> fillOperations = structuredBlockLocations.stream()
                     .filter(s -> s.contains("," + minY + ","))
                     .map(s -> {
@@ -177,7 +175,7 @@ public class StructureBuilder {
 //                            return null;
 
                         CuboidRegion region = new CuboidRegion(BlockVector3.at(x, y, z), BlockVector3.at(x, y2, z));
-                        System.out.println("" + region);
+//                        System.out.println("" + region);
 
                         String biomeKey = BiomeUtils.getBiomeKeyByBlock(world.getBlockAt(x, y, z));
                         String blockTypeName;
@@ -198,7 +196,7 @@ public class StructureBuilder {
                     })
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
-            System.out.println("fill " + fillOperations.size());
+//            System.out.println("fill " + fillOperations.size());
             build.operations.addAll(fillOperations);
         }
 
