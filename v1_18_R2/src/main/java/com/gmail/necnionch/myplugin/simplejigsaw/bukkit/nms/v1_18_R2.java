@@ -1,5 +1,6 @@
 package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.nms;
 
+import net.minecraft.core.BlockPosition;
 import net.minecraft.core.IRegistry;
 import net.minecraft.resources.MinecraftKey;
 import net.minecraft.world.level.biome.BiomeBase;
@@ -28,5 +29,15 @@ public class v1_18_R2 implements NMS {
 
         return biomeKey != null ? biomeKey.toString() : null;
     }
+
+    @Override
+    public @Nullable String getBiomeKeyByPosition(World world, int x, int y, int z) {
+        BlockPosition position = new BlockPosition(x, y, z);
+        BiomeBase biomeBase = ((CraftWorld) world).getHandle().v(position).a();
+        MinecraftKey biomeKey = biomeRegistry.b(biomeBase);
+
+        return biomeKey != null ? biomeKey.toString() : null;
+    }
+
 
 }

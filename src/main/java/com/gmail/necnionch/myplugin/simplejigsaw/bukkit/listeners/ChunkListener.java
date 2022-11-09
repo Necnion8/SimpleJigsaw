@@ -15,6 +15,7 @@ import org.bukkit.generator.WorldInfo;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 public class ChunkListener implements Listener {
@@ -23,14 +24,16 @@ public class ChunkListener implements Listener {
 
     public ChunkListener(SimpleJigsawPlugin plugin, StructureGenerator generator) {
         this.generator = generator;
-        List<BlockPopulator> populators = Bukkit.getWorld("test3").getPopulators();
-        populators.removeIf(p -> p.getClass().getName().startsWith("com.gmail.necnionch.myplugin"));
-        populators.add(createBlockPopulator());
+        Optional.ofNullable(Bukkit.getWorld("test3")).ifPresent(world -> {
+            List<BlockPopulator> populators = world.getPopulators();
+            populators.removeIf(p -> p.getClass().getName().startsWith("com.gmail.necnionch.myplugin"));
+            populators.add(createBlockPopulator(world));
+        });
     }
 
     @EventHandler
     public void onLoad(ChunkLoadEvent event) {
-//        generator.onEvent(event);
+        generator.onEvent(event);
     }
 
     @EventHandler
@@ -40,11 +43,11 @@ public class ChunkListener implements Listener {
         if (!world.getName().equalsIgnoreCase("test3"))
             return;
 
-        world.getPopulators().add(createBlockPopulator());
+        world.getPopulators().add(createBlockPopulator(world));
         System.out.println("add pop");
     }
 
-    public BlockPopulator createBlockPopulator() {
+    public BlockPopulator createBlockPopulator(final World world) {
         return new BlockPopulator() {
             @Override
             public void populate(@NotNull WorldInfo worldInfo, @NotNull Random random, int chunkX, int chunkZ, @NotNull LimitedRegion limitedRegion) {
