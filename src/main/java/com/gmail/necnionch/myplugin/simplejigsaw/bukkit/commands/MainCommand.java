@@ -149,7 +149,7 @@ public class MainCommand extends RootCommand {
                 .map(StructureConfig.Generator::bottomFill)
                 .orElseGet(Collections::emptyMap);
 
-        StructureBuilder builder = plugin.createStructureBuilder(structure.getSchematics(), maxSize, SimpleJigsawPlugin.DEBUG_MODE);
+        StructureBuilder builder = plugin.createStructureBuilder(structure.getSchematics(), maxSize, !SimpleJigsawPlugin.DEBUG_MODE);
 
         try {
             long processTime = System.currentTimeMillis();

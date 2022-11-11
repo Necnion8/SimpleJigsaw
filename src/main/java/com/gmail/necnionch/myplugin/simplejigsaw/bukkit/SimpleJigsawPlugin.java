@@ -141,7 +141,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
 
     private final Map<String, Map<String, List<JigsawPart>>> cachedPartsOfPool = Maps.newHashMap();  // todo: unload cache
 
-    public StructureBuilder createStructureBuilder(StructureConfig.Schematics schematics, int maxSize, boolean clearStructures) {
+    public StructureBuilder createStructureBuilder(StructureConfig.Schematics schematics, int maxSize, boolean replaceJigsaw) {
         Map<String, List<JigsawPart>> partsOfPool = Maps.newHashMap();
 
         if (cachedPartsOfPool.containsKey(schematics.getName()))
@@ -155,7 +155,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
                     getLogger().warning("Failed to load " + schematicFile + " file");
                     return;
                 }
-                JigsawPart part = worldEditBridge.createJigsawPartOf(schematics, schematic, clipboard, clearStructures);
+                JigsawPart part = worldEditBridge.createJigsawPartOf(schematics, schematic, clipboard, replaceJigsaw);
                 if (partsOfPool.containsKey(poolName)) {
                     partsOfPool.get(poolName).add(part);
                 } else {

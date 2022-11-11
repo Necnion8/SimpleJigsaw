@@ -44,7 +44,7 @@ public class JigsawPart {
         this.origin = clipboard.getOrigin();
     }
 
-    public void loadBlocks(boolean clearStructures) {
+    public void loadBlocks(boolean replaceJigsaw) {
         BlockType blockType = BlockTypes.JIGSAW;
         if (blockType == null)
             return;
@@ -75,7 +75,7 @@ public class JigsawPart {
                         finalBlockType = BlockTypes.STRUCTURE_VOID;
                     }
 
-                    if (clearStructures && finalBlockType != null) {
+                    if (replaceJigsaw && finalBlockType != null) {
                         try {
                             clipboard.setBlock(entry.location(), finalBlockType.getDefaultState());
                         } catch (WorldEditException e) {
