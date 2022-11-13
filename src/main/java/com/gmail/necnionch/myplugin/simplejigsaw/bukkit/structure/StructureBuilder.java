@@ -34,7 +34,6 @@ import org.bukkit.block.Block;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -391,13 +390,16 @@ public class StructureBuilder {
         return new BlockTypeMask(extent, whitelistBlockTypes);
     }
 
+    private boolean checkTargetConnector(ConnectInstance connect, JigsawConnector connector) {
+        return connector.getOrientation().isHorizontal() == connect.getOppositeOrientation().isHorizontal()
+                && connector.getName().startsWith(connect.getConnector().getTargetName());
+    }
+
     private @Nullable JigsawConnector selectConnector(ConnectInstance connect) {
 //        getLogger().warning("selecting");
         JigsawConnector from = connect.getConnector();
         List<JigsawConnector> targets;
-        Predicate<JigsawConnector> connectorsPredicate = conn ->
-                conn.getOrientation().isHorizontal() == connect.getOppositeOrientation().isHorizontal()
-                        && conn.getName().startsWith(from.getTargetName());
+
 //        getLogger().warning("pos: " + connect.getPosition());
 //        getLogger().warning("size: " + connect.getSize());
 //        getLogger().warning("rot: " + connect.getOppositeOrientation());
@@ -407,19 +409,19 @@ public class StructureBuilder {
             // 最大サイズだった場合は末端パーツ
             targets = getEndConnectorsByPool(from.getPool())
                     .stream()
-                    .filter(connectorsPredicate)
+                    .filter(conn -> checkTargetConnector(connect, conn))
                     .collect(Collectors.toList());
 
             if (targets.isEmpty())
                 targets = getConnectorsByPool(from.getPool())
                         .stream()
-                        .filter(connectorsPredicate)
+                        .filter(conn -> checkTargetConnector(connect, conn))
                         .collect(Collectors.toList());
 
         } else {
             targets = getConnectorsByPool(from.getPool())
                     .stream()
-                    .filter(connectorsPredicate)
+                    .filter(conn -> checkTargetConnector(connect, conn))
                     .collect(Collectors.toList());
         }
 
