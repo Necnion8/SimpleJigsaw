@@ -190,13 +190,13 @@ public class StructureBuilder {
 //                        if (y2 < y)
 //                            return null;
 
-                        if (!world.getBlockAt(x, y, z).getType().isAir())
+                        if (checkNonAirBlock(world.getBlockAt(x, y, z).getType()))
                             return null;
 
                         int y2 = y;
                         while (world.getMinHeight() < y2) {
                             Block block = world.getBlockAt(x, y2, z);
-                            if (!block.getType().isAir() && !Material.WATER.equals(block.getType()))
+                            if (checkNonAirBlock(block.getType()))
                                 break;
                             y2--;
                         }
@@ -212,6 +212,10 @@ public class StructureBuilder {
         }
 
         return build;
+    }
+
+    private boolean checkNonAirBlock(Material type) {
+        return !type.isAir() && !Material.WATER.equals(type);
     }
 
 
