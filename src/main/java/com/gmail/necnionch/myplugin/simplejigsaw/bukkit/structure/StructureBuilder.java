@@ -392,7 +392,7 @@ public class StructureBuilder {
 
     private boolean checkTargetConnector(ConnectInstance connect, JigsawConnector connector) {
         return connector.getOrientation().isHorizontal() == connect.getOppositeOrientation().isHorizontal()
-                && connector.getName().startsWith(connect.getConnector().getTargetName());
+                && connector.getName().matches(connect.getConnector().getTargetName());
     }
 
     private @Nullable JigsawConnector selectConnector(ConnectInstance connect) {
