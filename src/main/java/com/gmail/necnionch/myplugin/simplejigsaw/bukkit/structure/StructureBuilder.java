@@ -35,6 +35,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class StructureBuilder {
@@ -391,8 +393,36 @@ public class StructureBuilder {
     }
 
     private boolean checkTargetConnector(ConnectInstance connect, JigsawConnector connector) {
+        String targetName = connect.getConnector().getTargetName();
+        if (targetName.equalsIgnoreCase("minecraft:empty") || connector.getName().equalsIgnoreCase("minecraft:empty"))
+            return false;
+        Pattern reg = Pattern.compile("(^|_)xxx(_|$)");
+        Matcher m = reg.matcher(targetName);
+        StringBuilder sb = new StringBuilder();
+        boolean pattern = false;
+        int idx = 0;
+        while (m.find()) {
+            pattern = true;
+            sb.append(targetName, idx, m.start());
+            sb.append(m.group(1));
+            sb.append("[a-z0-9]+");
+            sb.append(m.group(2));
+            idx = m.end();
+        }
+        sb.append(targetName.substring(idx));
+        sb.append(".*$");
+
+        getLogger().warning("Target name: " + targetName);
+
+        if (pattern) {
+            getLogger().warning("Pattern name: " + sb);
+            getLogger().warning("  this: " + connector.getName() + " result: " + (connector.getName().matches(sb.toString())));
+            return connector.getOrientation().isHorizontal() == connect.getOppositeOrientation().isHorizontal()
+                    && connector.getName().matches(sb.toString());
+        }
+
         return connector.getOrientation().isHorizontal() == connect.getOppositeOrientation().isHorizontal()
-                && connector.getName().matches(connect.getConnector().getTargetName());
+                && connector.getName().startsWith(targetName);
     }
 
     private @Nullable JigsawConnector selectConnector(ConnectInstance connect) {
