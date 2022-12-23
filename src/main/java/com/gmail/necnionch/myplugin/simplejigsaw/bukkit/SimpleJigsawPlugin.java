@@ -31,7 +31,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public final class SimpleJigsawPlugin extends JavaPlugin {
-    public static boolean DEBUG_MODE = true;  // todo: disable
+    public static boolean DEBUG_MODE = false;
     public static final Permission DEBUG_PERM = new Permission("simplejigsaw.debug");
     private static SimpleJigsawPlugin instance;
     private final WorldEditBridge worldEditBridge = new WorldEditBridge(this);
