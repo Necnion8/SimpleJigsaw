@@ -38,6 +38,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
     private final StructureConfigLoader structuresLoader = new StructureConfigLoader();
     private final StructureGenerator structureGenerator = new StructureGenerator(this, structuresLoader);
     private final TickUtils tickUtils = new TickUtils(this);
+    private final Map<String, Map<String, List<JigsawPart>>> cachedPartsOfPool = Maps.newHashMap();
 
     @Override
     public void onEnable() {
@@ -99,6 +100,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
     }
 
     public void reload() {
+        cachedPartsOfPool.clear();
         structuresLoader.loadAll(this);
 
         Collection<StructureConfig.Schematics> schematics = structuresLoader.getSchematics().values();
@@ -138,8 +140,6 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
         return Collections.unmodifiableMap(structuresLoader.structures());
     }
 
-
-    private final Map<String, Map<String, List<JigsawPart>>> cachedPartsOfPool = Maps.newHashMap();  // todo: unload cache
 
     public StructureBuilder createStructureBuilder(StructureConfig.Schematics schematics, int maxSize, boolean replaceJigsaw) {
         Map<String, List<JigsawPart>> partsOfPool = Maps.newHashMap();
