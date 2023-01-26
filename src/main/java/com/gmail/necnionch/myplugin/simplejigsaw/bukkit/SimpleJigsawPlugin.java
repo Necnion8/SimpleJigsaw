@@ -88,6 +88,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
 //                p.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText("" + d + " ms" + " / " + value + " ms"));
 //
 //            }, 0, 0);
+            DEBUG_MODE = true;
         });
 
         tickUtils.start();

@@ -412,11 +412,11 @@ public class StructureBuilder {
         sb.append(targetName.substring(idx));
         sb.append(".*$");
 
-        getLogger().warning("Target name: " + targetName);
+//        getLogger().warning("Target name: " + targetName);
 
         if (pattern) {
-            getLogger().warning("Pattern name: " + sb);
-            getLogger().warning("  this: " + connector.getName() + " result: " + (connector.getName().matches(sb.toString())));
+//            getLogger().warning("Pattern name: " + sb);
+//            getLogger().warning("  this: " + connector.getName() + " result: " + (connector.getName().matches(sb.toString())));
             return connector.getOrientation().isHorizontal() == connect.getOppositeOrientation().isHorizontal()
                     && connector.getName().matches(sb.toString());
         }
@@ -499,8 +499,8 @@ public class StructureBuilder {
 //            System.out.println("conflict");
         }
 
-        if (true)
-            return null;
+//        if (true)
+//            return null;
         // 全て重なる場合は、一番重なりが少ない物を選ぶ
         Map.Entry<JigsawConnector, ConflictTestResult> hit = tests.entrySet().stream()
                 .min(Comparator.comparingInt(e -> e.getValue().conflictCount))
