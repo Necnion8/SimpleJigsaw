@@ -7,6 +7,7 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.generator.StructureGener
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.MythicMobsBridge;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.WorldEditBridge;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawPart;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.listeners.BlockListener;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.listeners.ChunkListener;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.nms.NMSHandler;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.SchematicPool;
@@ -50,6 +51,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
 
         MainCommand.registerCommand(this);
         getServer().getPluginManager().registerEvents(new ChunkListener(this, structureGenerator), this);
+        getServer().getPluginManager().registerEvents(new BlockListener(this), this);
         reload();
 
         getServer().getPluginManager().registerEvents(new Listener() {
