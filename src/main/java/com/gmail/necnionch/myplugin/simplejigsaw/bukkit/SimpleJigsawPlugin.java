@@ -185,8 +185,8 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
         return Objects.requireNonNull(instance, "Plugin is disabled").worldEditBridge;
     }
 
-    public MythicMobsBridge getMythicMobsBridge() {
-        return mythicMobsBridge;
+    public static MythicMobsBridge getMythicMobsBridge() {
+        return Objects.requireNonNull(instance, "Plugin is disabled").mythicMobsBridge;
     }
 
 }
