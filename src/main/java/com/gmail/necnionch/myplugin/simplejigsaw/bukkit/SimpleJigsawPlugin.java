@@ -4,6 +4,7 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.commands.MainCommand;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfig;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfigLoader;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.generator.StructureGenerator;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.MythicMobsBridge;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.WorldEditBridge;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawPart;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.listeners.ChunkListener;
@@ -35,6 +36,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
     public static final Permission DEBUG_PERM = new Permission("simplejigsaw.debug");
     private static SimpleJigsawPlugin instance;
     private final WorldEditBridge worldEditBridge = new WorldEditBridge(this);
+    private final MythicMobsBridge mythicMobsBridge = new MythicMobsBridge(this);
     private final StructureConfigLoader structuresLoader = new StructureConfigLoader();
     private final StructureGenerator structureGenerator = new StructureGenerator(this, structuresLoader);
     private final TickUtils tickUtils = new TickUtils(this);
@@ -93,11 +95,14 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
 
         tickUtils.start();
         structureGenerator.task.runTaskTimer(this, 0, 0);
+
+        mythicMobsBridge.init();
     }
 
     @Override
     public void onDisable() {
         tickUtils.stop();
+        mythicMobsBridge.cleanup();
     }
 
     public void reload() {
@@ -176,6 +181,10 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
 
     public static WorldEditBridge getWorldEdit() {
         return Objects.requireNonNull(instance, "Plugin is disabled").worldEditBridge;
+    }
+
+    public MythicMobsBridge getMythicMobsBridge() {
+        return mythicMobsBridge;
     }
 
 }
