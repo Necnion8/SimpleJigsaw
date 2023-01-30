@@ -11,6 +11,7 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.nms.NMSHandler;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.SchematicPool;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.StructureBuilder;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.TickUtils;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
@@ -167,6 +168,39 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
 
         cachedPartsOfPool.put(schematics.getName(), partsOfPool);
         return new StructureBuilder(schematics, maxSize, partsOfPool);
+    }
+
+    public com.gmail.necnionch.myplugin.simplejigsaw.bukkit.builder.StructureBuilder createStructureBuilder2(StructureConfig.Schematics schematics, int maxSize, boolean replaceJigsaw) {
+        Map<String, List<JigsawPart>> partsOfPool = Maps.newHashMap();
+
+        if (cachedPartsOfPool.containsKey(schematics.getName())) {
+            ImmutableMultimap.Builder<String, JigsawPart> builder = ImmutableMultimap.builder();
+            cachedPartsOfPool.get(schematics.getName()).forEach((poolName, parts) ->
+                    builder.putAll(poolName.contains(":") ? poolName : "minecraft:" + poolName, parts));
+
+            return new com.gmail.necnionch.myplugin.simplejigsaw.bukkit.builder.StructureBuilder(
+                    getLogger(), schematics, maxSize, builder.build(), new Random());
+        }
+
+        schematics.getPools().forEach((poolName, pool) -> {
+            pool.getSchematics().forEach(schematic -> {
+                String schematicFile = "schematics/" + schematic.getFileName();
+                Clipboard clipboard = worldEditBridge.loadSchematic(new File(getDataFolder(), schematicFile));
+                if (clipboard == null) {
+                    getLogger().warning("Failed to load " + schematicFile + " file");
+                    return;
+                }
+                JigsawPart part = worldEditBridge.createJigsawPartOf(schematics, schematic, clipboard, replaceJigsaw);
+                if (partsOfPool.containsKey(poolName)) {
+                    partsOfPool.get(poolName).add(part);
+                } else {
+                    partsOfPool.put(poolName, Lists.newArrayList(part));
+                }
+            });
+        });
+
+        cachedPartsOfPool.put(schematics.getName(), partsOfPool);
+        return createStructureBuilder2(schematics, maxSize, replaceJigsaw);
     }
 
 

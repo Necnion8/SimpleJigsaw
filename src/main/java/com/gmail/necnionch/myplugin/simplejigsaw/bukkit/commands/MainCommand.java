@@ -8,6 +8,9 @@ import com.gmail.necnionch.myplugin.simplejigsaw.common.command.CommandBukkit;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.CommandSender;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.RootCommand;
 import com.sk89q.worldedit.WorldEditException;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.function.operation.Operation;
+import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -35,6 +38,7 @@ public class MainCommand extends RootCommand {
 
         addCommand("reload", null, this::cmdReload);
         addCommand("testbuild", null, this::cmdTestBuild, this::completeTestBuild);
+        addCommand("testbuild2", null, this::cmdTestBuild2, this::completeTestBuild);
 
         addCommand("setdebug", null, (sender, args) -> {
             SimpleJigsawPlugin.DEBUG_MODE = !SimpleJigsawPlugin.DEBUG_MODE;
@@ -154,6 +158,65 @@ public class MainCommand extends RootCommand {
         try {
             long processTime = System.currentTimeMillis();
             int generatedParts = builder.createBuild(location.getWorld(), new Random(), location, 0, fill).start();
+            getLogger().info("Generated " + structureName + " structure (" + generatedParts + " parts, " + (System.currentTimeMillis() - processTime) + " ms)");
+            sendTo(sender, ChatColor.GOLD + "ストラクチャから " + generatedParts + " パーツを生成しました " + ChatColor.GRAY + "(" + (System.currentTimeMillis() - processTime) + " ms)");
+
+        } catch (WorldEditException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void cmdTestBuild2(CommandSender sender, List<String> args) {
+        Location location;
+        if (sender.getSender() instanceof BlockCommandSender blockSender) {
+            location = blockSender.getBlock().getLocation().add(0, 1, 0);
+        } else if (sender.getSender() instanceof Player player) {
+            location = player.getLocation();
+        } else {
+            sendTo(sender, ChatColor.RED + "プレイヤーのみ実行できるコマンドです");
+            return;
+        }
+
+        String structureName;
+        try {
+            structureName = args.remove(0);
+        } catch (IndexOutOfBoundsException e) {
+            sendTo(sender, ChatColor.RED + "ストラクチャ名を指定してください");
+            return;
+        }
+
+        StructureConfig structure = plugin.getStructureByName(structureName);
+        if (structure == null || structure.getSchematics() == null) {
+            sendTo(sender, ChatColor.RED + "ストラクチャ " + structureName + " はロードされていません");
+            return;
+        }
+
+        int maxSize = 3;
+        try {
+            maxSize = Integer.parseInt(args.remove(0));
+        } catch (IndexOutOfBoundsException | NumberFormatException ignored) {
+        }
+
+        Map<String, String> fill = Optional.ofNullable(structure.getGenerator())
+                .map(StructureConfig.Generator::bottomFill)
+                .orElseGet(Collections::emptyMap);
+
+//        StructureBuilder builder = plugin.createStructureBuilder(structure.getSchematics(), maxSize, !SimpleJigsawPlugin.DEBUG_MODE);
+
+        com.gmail.necnionch.myplugin.simplejigsaw.bukkit.builder.StructureBuilder builder = plugin.createStructureBuilder2(
+                structure.getSchematics(), maxSize, !SimpleJigsawPlugin.DEBUG_MODE
+        );
+
+        try {
+            long processTime = System.currentTimeMillis();
+
+            int generatedParts = builder.buildPartsTree(0);
+            sendTo(sender, ChatColor.GRAY + "ツリー生成 (" + (System.currentTimeMillis() - processTime) + " ms)");
+
+            for (Operation operation : builder.buildStructure(BukkitAdapter.adapt(location.getWorld()), BukkitAdapter.asBlockVector(location))) {
+                Operations.complete(operation);
+            }
             getLogger().info("Generated " + structureName + " structure (" + generatedParts + " parts, " + (System.currentTimeMillis() - processTime) + " ms)");
             sendTo(sender, ChatColor.GOLD + "ストラクチャから " + generatedParts + " パーツを生成しました " + ChatColor.GRAY + "(" + (System.currentTimeMillis() - processTime) + " ms)");
 

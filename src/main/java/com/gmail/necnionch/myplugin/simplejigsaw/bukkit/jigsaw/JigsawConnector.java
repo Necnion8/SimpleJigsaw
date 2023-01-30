@@ -4,6 +4,9 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfig;
 import com.sk89q.worldedit.math.BlockVector3;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class JigsawConnector {
     private final @NotNull JigsawPart jigsawPart;
     private final @NotNull BlockVector3 location;
@@ -70,6 +73,42 @@ public class JigsawConnector {
 
     public @NotNull Orientation getOrientation() {
         return orientation;
+    }
+
+
+//    public boolean isConnectableTo(JigsawConnector to) {
+//        if (targetName.equalsIgnoreCase("minecraft:empty"))
+//            return false;
+//        return orientation.isHorizontal() == to.getOrientation().isHorizontal()
+//                && targetName.equalsIgnoreCase(to.getName());
+//    }
+
+    public boolean isConnectableTo(JigsawConnector to) {
+        if (targetName.equalsIgnoreCase("minecraft:empty") || to.getName().equalsIgnoreCase("minecraft:empty"))
+            return false;
+        if (orientation.isHorizontal() != to.getOrientation().isHorizontal())
+            return false;
+        if (orientation.isVertical() && orientation.getY() == to.getOrientation().getY())  // 上下関係かつ、お互いが同じ方向なら弾く
+            return false;
+
+        Pattern reg = Pattern.compile("(^|_)xxx(_|$)");
+        Matcher m = reg.matcher(targetName);
+        StringBuilder sb = new StringBuilder();
+        boolean pattern = false;
+        int idx = 0;
+        while (m.find()) {
+            pattern = true;
+            sb.append(targetName, idx, m.start());
+            sb.append(m.group(1));
+            sb.append("[a-z0-9]+");
+            sb.append(m.group(2));
+            idx = m.end();
+        }
+        sb.append(targetName.substring(idx));
+        sb.append(".*$");
+
+//        getLogger().warning("Target name: " + targetName);
+        return (pattern) ? to.getName().matches(sb.toString()) : to.getName().startsWith(targetName);
     }
 
 
