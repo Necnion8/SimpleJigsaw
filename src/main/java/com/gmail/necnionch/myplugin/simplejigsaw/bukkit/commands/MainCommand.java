@@ -2,13 +2,20 @@ package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.commands;
 
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfig;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.MythicMobsBridge;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.WorldEditBridge;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.mythicmobs.MSpawner;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.StructureBuilder;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.CommandBukkit;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.CommandSender;
 import com.gmail.necnionch.myplugin.simplejigsaw.common.command.RootCommand;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
+import io.lumine.mythic.api.config.MythicConfig;
+import io.lumine.mythic.bukkit.MythicBukkit;
+import io.lumine.mythic.bukkit.utils.numbers.RandomInt;
+import io.lumine.mythic.core.spawning.spawners.MythicSpawner;
+import io.lumine.mythic.core.spawning.spawners.SpawnerManager;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Color;
@@ -18,6 +25,7 @@ import org.bukkit.World;
 import org.bukkit.command.BlockCommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -35,6 +43,8 @@ public class MainCommand extends RootCommand {
 
         addCommand("reload", null, this::cmdReload);
         addCommand("testbuild", null, this::cmdTestBuild, this::completeTestBuild);
+        addCommand("givespawner", null, this::onGiveSpawner, this::compGiveSpawner);
+        addCommand("createtemplate", null, this::onCreateTemplate);
 
         addCommand("setdebug", null, (sender, args) -> {
             SimpleJigsawPlugin.DEBUG_MODE = !SimpleJigsawPlugin.DEBUG_MODE;
@@ -171,9 +181,121 @@ public class MainCommand extends RootCommand {
     }
 
 
+    private void onGiveSpawner(CommandSender sender, List<String> args) {
+        if (!(sender.getSender() instanceof Player player)) {
+            sendTo(sender, ChatColor.RED + "プレイヤーのみ実行できるコマンドです");
+            return;
+        }
+
+        MythicMobsBridge mgr = plugin.getMythicMobsBridge();
+        if (!mgr.available()) {
+            sendTo(sender, ChatColor.RED + "MythicMobsを利用できません");
+            return;
+        }
+
+        String name;
+        try {
+            name = args.get(0);
+        } catch (IndexOutOfBoundsException e) {
+            sendTo(sender, ChatColor.RED + "テンプレート名を指定してください");
+            return;
+        }
+        MythicConfig config = mgr.getTemplateByName(name);
+        if (config == null) {
+            sendTo(sender, ChatColor.RED + "指定されたテンプレートがありません");
+            return;
+        }
+        String mobName = config.getString("MobName");
+        String level = config.getString("MobLevel");
+
+        if (args.size() >= 2) {
+            try {
+                mobName = args.get(1);
+            } catch (IndexOutOfBoundsException e) {
+                sendTo(sender, ChatColor.RED + "対象のMob名を指定してください");
+                return;
+            }
+
+            if (mobName.contains(":")) {
+                String[] split = mobName.split(":");
+                mobName = split[0];
+
+                try {
+                    level = split[1];
+                    new RandomInt(level);  // test
+                } catch (Exception e) {
+                    sendTo(sender, ChatColor.RED + "Mobレベルの指定が無効です。整数または範囲(1, 2to5, etc)である必要があります");
+                    return;
+                }
+            }
+        }
+
+        MSpawner setting = new MSpawner(name, mobName, level);
+        ItemStack itemStack = setting.createBlockItem();
+
+        player.getInventory().addItem(itemStack);
+    }
+
+    private void onCreateTemplate(CommandSender sender, List<String> args) {
+        MythicMobsBridge mgr = plugin.getMythicMobsBridge();
+        if (!mgr.available()) {
+            sendTo(sender, ChatColor.RED + "MythicMobsを利用できません");
+            return;
+        }
+
+        if (args.isEmpty()) {
+            sendTo(sender, ChatColor.RED + "MythicMobsスポナーを指定してください");
+            return;
+        }
+
+        SpawnerManager spawners = MythicBukkit.inst().getSpawnerManager();
+        MythicSpawner spawner = spawners.getSpawnerByName(args.get(0));
+
+        if (spawner == null) {
+            sendTo(sender, ChatColor.RED + "指定されたスポナーがありません");
+            return;
+        }
+
+        mgr.addFromMythicSpawner(spawner, spawner.getName());
+        sendTo(sender, ChatColor.GOLD + "テンプレート " + spawner.getName() + " として保存しました");
+
+    }
+
+    private List<String> compGiveSpawner(CommandSender sender, String label, List<String> args) {
+        MythicMobsBridge mgr = plugin.getMythicMobsBridge();
+        if (mgr.available() && args.size() == 1) {
+            return generateSuggests(args.get(0), mgr.getTemplateNames().toArray(new String[0]));
+        }
+        return null;
+    }
+
+
     private void cmdReload(CommandSender sender, List<String> args) {
-        plugin.reload();
-        sendTo(sender, ChatColor.GOLD + "設定ファイルを再読み込みしました");
+        int success = 0;
+        try {
+            plugin.reload();
+            success++;
+        } catch (Throwable e) {
+            e.printStackTrace();
+            sendTo(sender, ChatColor.RED + "構造設定の読み込み中にエラーが発生しました");
+        }
+
+        MythicMobsBridge mgr = plugin.getMythicMobsBridge();
+        if (mgr.available()) {
+            try {
+                mgr.loadAll();
+                success++;
+            } catch (Throwable e) {
+                e.printStackTrace();
+                sendTo(sender, ChatColor.RED + "スポナーテンプレート設定の読み込み中にエラーが発生しました");
+            }
+        } else {
+            success++;
+        }
+
+        if (success >= 2)
+            sendTo(sender, ChatColor.GOLD + "設定ファイルを再読み込みしました");
+
     }
 
     public static MainCommand registerCommand(SimpleJigsawPlugin plugin) {
