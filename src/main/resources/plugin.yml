@@ -3,6 +3,7 @@ version: '${version}'
 main: com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin
 api-version: 1.18
 depend: [ WorldEdit ]
+softdepend: [ MythicMobs ]
 authors: [ Necnion8 ]
 
 commands:
