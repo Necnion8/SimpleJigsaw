@@ -2,6 +2,7 @@ package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure;
 
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.config.StructureConfig;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.MythicMobsBridge;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawConnector;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawPart;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.BiomeUtils;
@@ -19,10 +20,12 @@ import com.sk89q.worldedit.function.mask.BlockTypeMask;
 import com.sk89q.worldedit.function.mask.Mask;
 import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
+import com.sk89q.worldedit.function.operation.RunContext;
 import com.sk89q.worldedit.function.visitor.RegionVisitor;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.transform.AffineTransform;
 import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import com.sk89q.worldedit.world.World;
 import com.sk89q.worldedit.world.block.BlockType;
@@ -49,6 +52,7 @@ public class StructureBuilder {
     private @Nullable Map<String, List<JigsawConnector>> poolOfConnectors;  // caching
     private @Nullable Map<String, List<JigsawConnector>> poolOfEndConnectors;  // caching
     private final Set<String> structuredBlockLocations = Sets.newHashSet();
+    private final MythicMobsBridge mythicMobs = SimpleJigsawPlugin.getMythicMobsBridge();
 
     private final Set<BlockType> whitelistBlockTypes = BlockType.REGISTRY.values().stream()
             .filter(bType -> !bType.equals(BlockTypes.STRUCTURE_VOID))
@@ -247,6 +251,10 @@ public class StructureBuilder {
                 .maskSource(createNonReplaceMaskStructureVoid(clipboard))
                 .build());
 
+        if (!mythicMobs.available())
+            operations.add(replaceMythicSpawners(
+                    position, clipboard.getOrigin(), angle, world, clipboard.getRegion()));
+
         ConflictTestResult test = testConflictBlocks(firstPart, position, firstPart.toRelativeLocation(clipboard.getOrigin()), angle);
         structuredBlockLocations.addAll(test.locationNames);
 
@@ -283,6 +291,10 @@ public class StructureBuilder {
                 .maskSource(createNonReplaceMaskStructureVoid(clipboard))
                 .build());
 //        markStructured(to.getJigsawPart(), position, to.getJigsawPart().toRelativeLocation(clipboard.getOrigin()), newRotation, Color.YELLOW);
+
+        if (!mythicMobs.available())
+            connect.operations.add(replaceMythicSpawners(
+                    position, to.getOriginalLocation(), newRotation, connect.getWorld(), clipboard.getRegion()));
 
         // 最大サイズなら終了
         if (maxSize <= connect.getSize())
@@ -539,6 +551,22 @@ public class StructureBuilder {
 //        pl.getServer().getScheduler().scheduleSyncRepeatingTask(pl, () -> {
 //            world.spawnParticle(org.bukkit.Particle.REDSTONE, loc.getBlockX() + .5, loc.getBlockY() + 1.5, loc.getBlockZ() + .5, 1, 0, 0, 0, dust);
 //        }, 0, 1);
+    }
+
+    private Operation replaceMythicSpawners(BlockVector3 pos, BlockVector3 origin, int angle, World world, Region region) {
+        return new Operation() {
+            @Override
+            public Operation resume(RunContext run) {
+                BlockVector3 min = pos.add(bUtils.rotate90(angle, region.getMinimumPoint(), origin));
+                BlockVector3 max = pos.add(bUtils.rotate90(angle, region.getMaximumPoint(), origin));
+                org.bukkit.World bWorld = BukkitAdapter.adapt(world);
+                mythicMobs.replaceTemplateSpawnersToMythic(BukkitAdapter.adapt(bWorld, min), BukkitAdapter.adapt(bWorld, max), bWorld);
+                return this;
+            }
+
+            @Override
+            public void cancel() {}
+        };
     }
 
 

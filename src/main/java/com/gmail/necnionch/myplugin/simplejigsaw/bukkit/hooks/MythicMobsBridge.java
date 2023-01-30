@@ -1,6 +1,8 @@
 package com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks;
 
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.SimpleJigsawPlugin;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.hooks.mythicmobs.MSpawner;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.lumine.mythic.api.config.MythicConfig;
 import io.lumine.mythic.bukkit.BukkitAdapter;
@@ -9,9 +11,15 @@ import io.lumine.mythic.bukkit.utils.config.file.YamlConfiguration;
 import io.lumine.mythic.core.config.MythicConfigImpl;
 import io.lumine.mythic.core.logging.MythicLogger;
 import io.lumine.mythic.core.spawning.spawners.MythicSpawner;
+import io.lumine.mythic.core.spawning.spawners.SpawnerManager;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.CreatureSpawner;
+import org.bukkit.entity.EntityType;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -127,13 +135,104 @@ public class MythicMobsBridge {
         return Collections.unmodifiableSet(templates.keySet());
     }
 
-
     public MythicSpawner createSpawner(String name, MythicConfig config, Location location) {
         World world = location.getWorld();
         name = String.format("%s_%s,%d,%d,%d", name, world.getName(), location.getBlockX(), location.getBlockY(), location.getBlockZ());
         MythicSpawner spawner = new MythicSpawner(MythicBukkit.inst().getSpawnerManager(), name, config);
         spawner.setLocation(BukkitAdapter.adapt(location));
         return spawner;
+    }
+
+    public @Nullable List<MythicSpawner> replaceTemplateSpawnersToMythic(Location min, Location max, World world) {
+        if (!available()) {
+            String locationName = String.format("%s,min%d,%d,%d,max%d,%d,%d",
+                    world.getName(), min.getBlockX(), min.getBlockY(), min.getBlockZ(), max.getBlockX(), max.getBlockY(), max.getBlockZ());
+
+            plugin.getLogger().warning("Failed to replaceSpawners at (" + locationName + "). MythicMobs is not available!");
+            return null;
+        }
+
+        SpawnerManager mgr = MythicBukkit.inst().getSpawnerManager();
+        if (mgr == null) {
+            String locationName = String.format("%s,min%d,%d,%d,max%d,%d,%d",
+                    world.getName(), min.getBlockX(), min.getBlockY(), min.getBlockZ(), max.getBlockX(), max.getBlockY(), max.getBlockZ());
+
+            plugin.getLogger().warning("Failed to replaceSpawners at (" + locationName + "). MythicMobs SpawnerManager is null!");
+            return null;
+        }
+
+        List<MythicSpawner> created = Lists.newArrayList();
+
+        for (int x = min.getBlockX(); x <= max.getBlockX(); x++) {
+            for (int y = min.getBlockY(); y <= max.getBlockY(); y++) {
+                for (int z = min.getBlockZ(); z <= max.getBlockZ(); z++) {
+
+                    Block block = world.getBlockAt(x, y, z);
+                    if (!Material.SPAWNER.equals(block.getType()) || !(block.getState() instanceof CreatureSpawner blockSpawner))
+                        continue;
+
+                    boolean success = false;
+                    try {
+                        MSpawner spawnerSetting = MSpawner.fromPersistentData(blockSpawner.getPersistentDataContainer());
+                        if (spawnerSetting == null) {
+                            continue;
+                        }
+
+                        MythicConfig spawnerConfig = getTemplateByName(spawnerSetting.getName());
+                        if (spawnerConfig == null) {
+                            String locationName = String.format("%s,min%d,%d,%d,max%d,%d,%d",
+                                    world.getName(), min.getBlockX(), min.getBlockY(), min.getBlockZ(), max.getBlockX(), max.getBlockY(), max.getBlockZ());
+                            plugin.getLogger().warning("Unknown spawner template: " + spawnerSetting.getName() + " (" + locationName + ")");
+
+                        } else {
+                            created.add(replaceSpawner(spawnerSetting, spawnerConfig, blockSpawner));
+                            success = true;
+
+                        }
+                    } catch (Throwable e) {
+                        e.printStackTrace();
+                        String locationName = String.format("%s,min%d,%d,%d,max%d,%d,%d",
+                                world.getName(), min.getBlockX(), min.getBlockY(), min.getBlockZ(), max.getBlockX(), max.getBlockY(), max.getBlockZ());
+                        plugin.getLogger().severe("Exception in replace spawner (" + locationName + ")");
+                    }
+
+                    if (!success) {
+                        block.setType(Material.AIR);
+                    }
+
+                }
+            }
+        }
+
+        if (!created.isEmpty())
+            mgr.saveSpawners();
+
+        return created;
+    }
+
+    private MythicSpawner replaceSpawner(MSpawner setting, MythicConfig config, CreatureSpawner spawner) {
+        SpawnerManager mgr = MythicBukkit.inst().getSpawnerManager();
+        MythicSpawner ms = createSpawner(setting.getName(), config, spawner.getLocation());
+
+        if (setting.getMobName() != null) {
+            ms.setType(setting.getMobName());
+            if (setting.getLevelString() != null)
+                ms.setMobLevel(setting.getLevel());
+        }
+
+        spawner.setSpawnedType(EntityType.BAT);
+        spawner.setSpawnCount(0);
+        spawner.update();
+
+        mgr.listSpawners.add(ms);
+        mgr.addSpawnerToChunkLookupTable(ms);
+
+        mgr.mmSpawners.put(ms.getLocation(), ms);
+        if (!mgr.mmSpawnerHashcodeLookup.containsKey(ms.hashCode())) {
+            mgr.mmSpawnerHashcodeLookup.put(ms.hashCode(), ms);
+        }
+
+        return ms;
     }
 
 }
