@@ -17,7 +17,6 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.CreatureSpawner;
-import org.bukkit.entity.EntityType;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -232,8 +231,7 @@ public class MythicMobsBridge {
                     ms.setMobLevel(setting.getLevel());
             }
 
-            spawner.setSpawnedType(EntityType.BAT);
-            spawner.setSpawnCount(0);
+            spawner.setBlockData(setting.getReplaceBlockOrAir());  // TODO: パーツの回転とブロックの向きを合わせる
             spawner.update();
 
             mgr.listSpawners.add(ms);
