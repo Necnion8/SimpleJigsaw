@@ -43,7 +43,7 @@ public class MainCommand extends RootCommand {
 
         addCommand("reload", null, this::cmdReload);
         addCommand("testbuild", null, this::cmdTestBuild, this::completeTestBuild);
-        addCommand("spawner", null, this::cmdSpawner, this::compSpawner);
+        addCommand("spawner", null, this::cmdSpawner, this::completeSpawner);
 
         addCommand("setdebug", null, (sender, args) -> {
             SimpleJigsawPlugin.DEBUG_MODE = !SimpleJigsawPlugin.DEBUG_MODE;
@@ -184,11 +184,11 @@ public class MainCommand extends RootCommand {
         if (args.size() >= 1) {
             if (args.get(0).equalsIgnoreCase("give")) {
                 args.remove(0);
-                onGiveSpawner(sender, args);
+                cmdSpawnerGive(sender, args);
                 return;
             } else if (args.get(0).equalsIgnoreCase("createTemplate")) {
                 args.remove(0);
-                onCreateTemplate(sender, args);
+                cmdSpawnerCreateTemplate(sender, args);
                 return;
             }
         }
@@ -196,17 +196,17 @@ public class MainCommand extends RootCommand {
         sendTo(sender, ChatColor.WHITE + "/sjigsaw spawner createTemplate (mmSpawnerName)");
     }
 
-    private @NotNull List<String> compSpawner(CommandSender sender, String label, List<String> args) {
+    private @NotNull List<String> completeSpawner(CommandSender sender, String label, List<String> args) {
         if (args.size() <= 1)
             return generateSuggests(args.get(0), "give", "createtemplate");
         if (args.get(0).equalsIgnoreCase("give")) {
             args.remove(0);
-            return compGiveSpawner(sender, label, args);
+            return completeSpawnerGive(sender, label, args);
         }
         return Collections.emptyList();
     }
 
-    private void onGiveSpawner(CommandSender sender, List<String> args) {
+    private void cmdSpawnerGive(CommandSender sender, List<String> args) {
         if (!(sender.getSender() instanceof Player player)) {
             sendTo(sender, ChatColor.RED + "プレイヤーのみ実行できるコマンドです");
             return;
@@ -261,7 +261,7 @@ public class MainCommand extends RootCommand {
         player.getInventory().addItem(itemStack);
     }
 
-    private void onCreateTemplate(CommandSender sender, List<String> args) {
+    private void cmdSpawnerCreateTemplate(CommandSender sender, List<String> args) {
         MythicMobsBridge.Instance mgr = SimpleJigsawPlugin.getMythicMobsBridge().get();
         if (mgr == null) {
             sendTo(sender, ChatColor.RED + "MythicMobsを利用できません");
@@ -286,7 +286,7 @@ public class MainCommand extends RootCommand {
 
     }
 
-    private List<String> compGiveSpawner(CommandSender sender, String label, List<String> args) {
+    private List<String> completeSpawnerGive(CommandSender sender, String label, List<String> args) {
         MythicMobsBridge.Instance mgr = SimpleJigsawPlugin.getMythicMobsBridge().get();
         if (mgr != null && args.size() == 1) {
             return generateSuggests(args.get(0), mgr.getTemplateNames().toArray(new String[0]));
@@ -322,6 +322,7 @@ public class MainCommand extends RootCommand {
             sendTo(sender, ChatColor.GOLD + "設定ファイルを再読み込みしました");
 
     }
+
 
     public static MainCommand registerCommand(SimpleJigsawPlugin plugin) {
         MainCommand mainCommand = new MainCommand(plugin);
