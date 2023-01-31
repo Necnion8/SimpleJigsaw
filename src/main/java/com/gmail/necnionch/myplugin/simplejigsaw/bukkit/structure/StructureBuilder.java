@@ -158,7 +158,8 @@ public class StructureBuilder {
 
     public WorldEditBuild createBuild(org.bukkit.World world, Random random, Location location, int angle, Map<String, String> bottomFillBlockOfBiomeKey) {
         List<Operation> operations = Lists.newArrayList();
-        int parts = build(BukkitAdapter.adapt(world), random, BlockVector3.at(location.getBlockX(), location.getBlockY(), location.getBlockZ()), angle, operations);
+        World wWorld = BukkitAdapter.adapt(world);
+        int parts = build(wWorld, world, random, BlockVector3.at(location.getBlockX(), location.getBlockY(), location.getBlockZ()), angle, operations);
 
         WorldEditBuild build = new WorldEditBuild(world, location, operations, parts);
 
@@ -206,7 +207,7 @@ public class StructureBuilder {
                             y2--;
                         }
                         CuboidRegion region = new CuboidRegion(BlockVector3.at(x, y, z), BlockVector3.at(x, y2, z));
-                        BlockReplace replace = new BlockReplace(BukkitAdapter.adapt(world), blockType.getDefaultState());
+                        BlockReplace replace = new BlockReplace(wWorld, blockType.getDefaultState());
                         RegionVisitor visitor = new RegionVisitor(region, replace);
                         return (Operation) visitor;
                     })
@@ -224,7 +225,7 @@ public class StructureBuilder {
     }
 
 
-    private int build(World world, Random random, BlockVector3 position, int angle, List<Operation> operations) {
+    private int build(World world, org.bukkit.World bWorld, Random random, BlockVector3 position, int angle, List<Operation> operations) {
         if (firstPart == null)
             firstPart = getRandomPartFromStartPool();
         if (firstPart == null)
@@ -253,7 +254,7 @@ public class StructureBuilder {
 
         if (mythicMobs != null)
             operations.add(replaceMythicSpawners(
-                    position, clipboard.getOrigin(), angle, world, clipboard.getRegion()));
+                    position, clipboard.getOrigin(), angle, bWorld, clipboard.getRegion()));
 
         ConflictTestResult test = testConflictBlocks(firstPart, position, firstPart.toRelativeLocation(clipboard.getOrigin()), angle);
         structuredBlockLocations.addAll(test.locationNames);
@@ -294,7 +295,7 @@ public class StructureBuilder {
 
         if (mythicMobs != null)
             connect.operations.add(replaceMythicSpawners(
-                    position, to.getOriginalLocation(), newRotation, connect.getWorld(), clipboard.getRegion()));
+                    position, to.getOriginalLocation(), newRotation, connect.getBukkitWorld(), clipboard.getRegion()));
 
         // 最大サイズなら終了
         if (maxSize <= connect.getSize())
@@ -553,15 +554,16 @@ public class StructureBuilder {
 //        }, 0, 1);
     }
 
-    private Operation replaceMythicSpawners(BlockVector3 pos, BlockVector3 origin, int angle, World world, Region region) {
+    private Operation replaceMythicSpawners(BlockVector3 pos, BlockVector3 origin, int angle, org.bukkit.World world, Region region) {
         return new Operation() {
             @Override
             public Operation resume(RunContext run) {
-                BlockVector3 min = pos.add(bUtils.rotate90(angle, region.getMinimumPoint(), origin));
-                BlockVector3 max = pos.add(bUtils.rotate90(angle, region.getMaximumPoint(), origin));
-                org.bukkit.World bWorld = BukkitAdapter.adapt(world);
-                mythicMobs.replaceTemplateSpawnersToMythic(BukkitAdapter.adapt(bWorld, min), BukkitAdapter.adapt(bWorld, max), bWorld);
-                return this;
+                BlockVector3[] location = bUtils.getMinMax(
+                        pos.add(bUtils.rotate90(angle, region.getMinimumPoint(), origin)),
+                        pos.add(bUtils.rotate90(angle, region.getMaximumPoint(), origin))
+                );
+                mythicMobs.replaceTemplateSpawnersToMythic(BukkitAdapter.adapt(world, location[0]), BukkitAdapter.adapt(world, location[1]), world);
+                return null;
             }
 
             @Override
@@ -571,6 +573,7 @@ public class StructureBuilder {
 
 
     private static class ConnectInstance {
+        private final org.bukkit.World bWorld;
         private final int size;
         private final BlockVector3 position;
         private final JigsawConnector.Orientation oppositeOrientation;
@@ -607,12 +610,17 @@ public class StructureBuilder {
             return world;
         }
 
+        public org.bukkit.World getBukkitWorld() {
+            return bWorld;
+        }
+
         public ConnectInstance createNextConnect(JigsawConnector connector, BlockVector3 position, JigsawConnector.Orientation orientation) {
             return new ConnectInstance(this, random, connector, position, orientation);
         }
 
 
         public ConnectInstance(ConnectInstance connectInstance, Random random, JigsawConnector connector, BlockVector3 position, JigsawConnector.Orientation orientation) {
+            this.bWorld = connectInstance.bWorld;
             this.size = connectInstance.size + 1;
             this.random = random;
             this.connector = connector;
@@ -624,6 +632,7 @@ public class StructureBuilder {
 
         public ConnectInstance(World world, Random random, JigsawConnector connector, BlockVector3 position, JigsawConnector.Orientation orientation, int size, List<Operation> operations) {
             this.world = world;
+            this.bWorld = BukkitAdapter.adapt(world);
             this.random = random;
             this.connector = connector;
             this.position = position;

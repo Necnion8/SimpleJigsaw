@@ -36,4 +36,8 @@ public class bUtils {
 //        return vector;
     }
 
+    public static BlockVector3[] getMinMax(BlockVector3 pos1, BlockVector3 pos2) {
+        return new BlockVector3[]{pos1.getMinimum(pos2), pos1.getMaximum(pos2)};
+    }
+
 }
