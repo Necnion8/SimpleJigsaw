@@ -43,8 +43,7 @@ public class MainCommand extends RootCommand {
 
         addCommand("reload", null, this::cmdReload);
         addCommand("testbuild", null, this::cmdTestBuild, this::completeTestBuild);
-        addCommand("givespawner", null, this::onGiveSpawner, this::compGiveSpawner);
-        addCommand("createtemplate", null, this::onCreateTemplate);
+        addCommand("spawner", null, this::cmdSpawner, this::compSpawner);
 
         addCommand("setdebug", null, (sender, args) -> {
             SimpleJigsawPlugin.DEBUG_MODE = !SimpleJigsawPlugin.DEBUG_MODE;
@@ -181,6 +180,32 @@ public class MainCommand extends RootCommand {
     }
 
 
+    private void cmdSpawner(CommandSender sender, List<String> args) {
+        if (args.size() >= 1) {
+            if (args.get(0).equalsIgnoreCase("give")) {
+                args.remove(0);
+                onGiveSpawner(sender, args);
+                return;
+            } else if (args.get(0).equalsIgnoreCase("createTemplate")) {
+                args.remove(0);
+                onCreateTemplate(sender, args);
+                return;
+            }
+        }
+        sendTo(sender, ChatColor.WHITE + "/sjigsaw spawner give (templateName)");
+        sendTo(sender, ChatColor.WHITE + "/sjigsaw spawner createTemplate (mmSpawnerName)");
+    }
+
+    private @NotNull List<String> compSpawner(CommandSender sender, String label, List<String> args) {
+        if (args.size() <= 1)
+            return generateSuggests(args.get(0), "give", "createtemplate");
+        if (args.get(0).equalsIgnoreCase("give")) {
+            args.remove(0);
+            return compGiveSpawner(sender, label, args);
+        }
+        return Collections.emptyList();
+    }
+
     private void onGiveSpawner(CommandSender sender, List<String> args) {
         if (!(sender.getSender() instanceof Player player)) {
             sendTo(sender, ChatColor.RED + "プレイヤーのみ実行できるコマンドです");
@@ -266,7 +291,7 @@ public class MainCommand extends RootCommand {
         if (mgr != null && args.size() == 1) {
             return generateSuggests(args.get(0), mgr.getTemplateNames().toArray(new String[0]));
         }
-        return null;
+        return Collections.emptyList();
     }
 
 
