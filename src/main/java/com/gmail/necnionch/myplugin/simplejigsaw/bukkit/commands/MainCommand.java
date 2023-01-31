@@ -187,8 +187,8 @@ public class MainCommand extends RootCommand {
             return;
         }
 
-        MythicMobsBridge mgr = plugin.getMythicMobsBridge();
-        if (!mgr.available()) {
+        MythicMobsBridge.Instance mgr = SimpleJigsawPlugin.getMythicMobsBridge().get();
+        if (mgr == null) {
             sendTo(sender, ChatColor.RED + "MythicMobsを利用できません");
             return;
         }
@@ -237,8 +237,8 @@ public class MainCommand extends RootCommand {
     }
 
     private void onCreateTemplate(CommandSender sender, List<String> args) {
-        MythicMobsBridge mgr = plugin.getMythicMobsBridge();
-        if (!mgr.available()) {
+        MythicMobsBridge.Instance mgr = SimpleJigsawPlugin.getMythicMobsBridge().get();
+        if (mgr == null) {
             sendTo(sender, ChatColor.RED + "MythicMobsを利用できません");
             return;
         }
@@ -262,8 +262,8 @@ public class MainCommand extends RootCommand {
     }
 
     private List<String> compGiveSpawner(CommandSender sender, String label, List<String> args) {
-        MythicMobsBridge mgr = plugin.getMythicMobsBridge();
-        if (mgr.available() && args.size() == 1) {
+        MythicMobsBridge.Instance mgr = SimpleJigsawPlugin.getMythicMobsBridge().get();
+        if (mgr != null && args.size() == 1) {
             return generateSuggests(args.get(0), mgr.getTemplateNames().toArray(new String[0]));
         }
         return null;
@@ -280,8 +280,8 @@ public class MainCommand extends RootCommand {
             sendTo(sender, ChatColor.RED + "構造設定の読み込み中にエラーが発生しました");
         }
 
-        MythicMobsBridge mgr = plugin.getMythicMobsBridge();
-        if (mgr.available()) {
+        MythicMobsBridge.Instance mgr = SimpleJigsawPlugin.getMythicMobsBridge().get();
+        if (mgr != null) {
             try {
                 mgr.loadAll();
                 success++;

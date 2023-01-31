@@ -52,7 +52,7 @@ public class StructureBuilder {
     private @Nullable Map<String, List<JigsawConnector>> poolOfConnectors;  // caching
     private @Nullable Map<String, List<JigsawConnector>> poolOfEndConnectors;  // caching
     private final Set<String> structuredBlockLocations = Sets.newHashSet();
-    private final MythicMobsBridge mythicMobs = SimpleJigsawPlugin.getMythicMobsBridge();
+    private final MythicMobsBridge.Instance mythicMobs = SimpleJigsawPlugin.getMythicMobsBridge().get();
 
     private final Set<BlockType> whitelistBlockTypes = BlockType.REGISTRY.values().stream()
             .filter(bType -> !bType.equals(BlockTypes.STRUCTURE_VOID))
@@ -251,7 +251,7 @@ public class StructureBuilder {
                 .maskSource(createNonReplaceMaskStructureVoid(clipboard))
                 .build());
 
-        if (!mythicMobs.available())
+        if (mythicMobs != null)
             operations.add(replaceMythicSpawners(
                     position, clipboard.getOrigin(), angle, world, clipboard.getRegion()));
 
@@ -292,7 +292,7 @@ public class StructureBuilder {
                 .build());
 //        markStructured(to.getJigsawPart(), position, to.getJigsawPart().toRelativeLocation(clipboard.getOrigin()), newRotation, Color.YELLOW);
 
-        if (!mythicMobs.available())
+        if (mythicMobs != null)
             connect.operations.add(replaceMythicSpawners(
                     position, to.getOriginalLocation(), newRotation, connect.getWorld(), clipboard.getRegion()));
 
