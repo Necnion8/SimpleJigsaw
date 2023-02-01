@@ -10,6 +10,7 @@ import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.jigsaw.JigsawPart;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.listeners.BlockListener;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.listeners.ChunkListener;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.nms.NMSHandler;
+import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.panel.Panel;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.SchematicPool;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.structure.StructureBuilder;
 import com.gmail.necnionch.myplugin.simplejigsaw.bukkit.util.TickUtils;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 public final class SimpleJigsawPlugin extends JavaPlugin {
     public static boolean DEBUG_MODE = false;
     public static final Permission DEBUG_PERM = new Permission("simplejigsaw.debug");
+    public static final Permission SPAWNER_EDITOR_PERM = new Permission("simplejigsaw.spawner.editor");
     private static SimpleJigsawPlugin instance;
     private final WorldEditBridge worldEditBridge = new WorldEditBridge(this);
     private final MythicMobsBridge mythicMobsBridge = new MythicMobsBridge(this);
@@ -46,6 +48,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+        Panel.OWNER = this;
         if (!new NMSHandler(getLogger()).init())
             getLogger().warning("NMS disabled! (ignored it)");
 
@@ -105,6 +108,8 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
     public void onDisable() {
         tickUtils.stop();
         mythicMobsBridge.cleanup();
+        Panel.destroyAll();
+        instance = null;
     }
 
     public void reload() {

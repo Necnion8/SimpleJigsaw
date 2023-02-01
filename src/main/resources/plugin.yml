@@ -14,3 +14,6 @@ commands:
 permissions:
   simplejigsaw.debug:
     default: op
+
+  simplejigsaw.spawner.editor:
+    default: op

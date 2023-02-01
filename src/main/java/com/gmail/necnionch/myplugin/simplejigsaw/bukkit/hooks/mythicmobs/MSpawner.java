@@ -23,7 +23,7 @@ public class MSpawner {
     private final String name;
     private final String mobName;
     private final String level;
-    private final @Nullable BlockData replaceBlock;
+    private @Nullable BlockData replaceBlock;
 
     public MSpawner(String name, String mobName, String level, @Nullable BlockData replaceBlock) {
         this.name = name;
@@ -58,6 +58,10 @@ public class MSpawner {
 
     public Optional<BlockData> getReplaceBlock() {
         return Optional.ofNullable(replaceBlock);
+    }
+
+    public void setReplaceBlock(@Nullable BlockData replaceBlock) {
+        this.replaceBlock = replaceBlock;
     }
 
     public void setPersistentData(PersistentDataContainer data) {
