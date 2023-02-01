@@ -98,6 +98,7 @@ public final class SimpleJigsawPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         tickUtils.stop();
+        instance = null;
     }
 
     public void reload() {
