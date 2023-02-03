@@ -67,7 +67,7 @@ public class MSpawner {
     public void setPersistentData(PersistentDataContainer data) {
         data.set(makeKey("name"), PersistentDataType.STRING, name);
         data.set(makeKey("mobName"), PersistentDataType.STRING, mobName);
-        data.set(makeKey("level"), PersistentDataType.STRING, level);
+        data.set(makeKey("level"), PersistentDataType.STRING, level);  // fixme: levelがnullになる？
 
         if (replaceBlock != null) {
             data.set(makeKey("replaceBlock"), PersistentDataType.STRING, replaceBlock.getAsString(true));
