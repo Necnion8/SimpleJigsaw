@@ -27,10 +27,12 @@ public class SchematicPool {
     public static class Entry {
         private final String fileName;
         private final int weight;
+        private final String poolName;
 
-        public Entry(String fileName, int weight) {
+        public Entry(String fileName, int weight, String poolName) {
             this.fileName = fileName;
             this.weight = weight;
+            this.poolName = poolName;
         }
 
         public String getFileName() {
@@ -41,14 +43,18 @@ public class SchematicPool {
             return weight;
         }
 
-        public static @Nullable Entry deserialize(Map<?, ?> data) {
+        public String getPoolName() {
+            return poolName;
+        }
+
+        public static @Nullable Entry deserialize(Map<?, ?> data, String poolName) {
             Object file = data.get("file");
             Object weight = data.get("weight");
             try {
                 if (weight == null)
                     weight = 1;
 
-                return new Entry((String) file, (int) weight);
+                return new Entry((String) file, (int) weight, poolName);
 
             } catch (NullPointerException | ClassCastException ignored) {
                 return null;
