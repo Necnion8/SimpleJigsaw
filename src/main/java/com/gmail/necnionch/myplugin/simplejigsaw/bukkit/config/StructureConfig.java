@@ -108,16 +108,18 @@ public class StructureConfig extends BukkitConfigDriver {
 
 
         public static Schematics deserialize(String name, ConfigurationSection config) {
-            String startPoolName = config.getString("start_pool");
+            String startPoolConfigName = config.getString("start_pool");
+            String startPoolName = (startPoolConfigName == null || startPoolConfigName.contains(":")) ? startPoolConfigName : "minecraft:" + startPoolConfigName;
             SchematicPool startPool = null;
             Map<String, SchematicPool> pools = Maps.newHashMap();
 
             ConfigurationSection poolsSection = config.getConfigurationSection("pools");
             if (poolsSection != null) {
-                for (String poolName : poolsSection.getKeys(false)) {
+                for (String poolConfigName : poolsSection.getKeys(false)) {
+                    String poolName = poolConfigName.contains(":") ? poolConfigName : "minecraft:" + poolConfigName;
                     List<SchematicPool.Entry> schematicEntries = Lists.newArrayList();
-                    poolsSection.getMapList(poolName).forEach(data -> {
-                        SchematicPool.Entry entry = SchematicPool.Entry.deserialize(data);
+                    poolsSection.getMapList(poolConfigName).forEach(data -> {
+                        SchematicPool.Entry entry = SchematicPool.Entry.deserialize(data, poolName);
                         if (entry != null)
                             schematicEntries.add(entry);
                     });

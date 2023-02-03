@@ -80,12 +80,13 @@ public class StructureBuilder {
             poolOfConnectors = Maps.newHashMap();
 
             for (JigsawPart part : parts) {
+                String partPool = part.getPoolEntry().getPoolName();
                 for (JigsawConnector connector : part.getConnectors()) {
-                    if (!connector.getPool().isEmpty()) {
-                        if (!poolOfConnectors.containsKey(connector.getPool())) {
-                            poolOfConnectors.put(connector.getPool(), Lists.newArrayList(connector));
+                    if (!connector.getTargetPool().isEmpty()) {
+                        if (!poolOfConnectors.containsKey(partPool)) {
+                            poolOfConnectors.put(partPool, Lists.newArrayList(connector));
                         } else {
-                            poolOfConnectors.get(connector.getPool()).add(connector);
+                            poolOfConnectors.get(partPool).add(connector);
                         }
                     }
                 }
@@ -103,13 +104,14 @@ public class StructureBuilder {
             poolOfEndConnectors = Maps.newHashMap();
 
             for (JigsawPart part : parts) {
+                String partName = part.getPoolEntry().getPoolName();
                 for (JigsawConnector connector : part.getConnectors()) {
-                    if (!connector.getPool().isEmpty()) {
+                    if (!connector.getTargetPool().isEmpty()) {
                         if (part.getConnectors().size() == 1) {
-                            if (!poolOfEndConnectors.containsKey(connector.getPool())) {
-                                poolOfEndConnectors.put(connector.getPool(), Lists.newArrayList(connector));
+                            if (!poolOfEndConnectors.containsKey(partName)) {
+                                poolOfEndConnectors.put(partName, Lists.newArrayList(connector));
                             } else {
-                                poolOfEndConnectors.get(connector.getPool()).add(connector);
+                                poolOfEndConnectors.get(partName).add(connector);
                             }
                         }
                     }
@@ -450,26 +452,26 @@ public class StructureBuilder {
         if (maxSize <= connect.getSize()) {
 //            System.out.println("maxSize <= connectSize");
             // 最大サイズだった場合は末端パーツ
-            targets = getEndConnectorsByPool(from.getPool())
+            targets = getEndConnectorsByPool(from.getTargetPool())
                     .stream()
                     .filter(conn -> checkTargetConnector(connect, conn))
                     .collect(Collectors.toList());
 
             if (targets.isEmpty())
-                targets = getConnectorsByPool(from.getPool())
+                targets = getConnectorsByPool(from.getTargetPool())
                         .stream()
                         .filter(conn -> checkTargetConnector(connect, conn))
                         .collect(Collectors.toList());
 
         } else {
-            targets = getConnectorsByPool(from.getPool())
+            targets = getConnectorsByPool(from.getTargetPool())
                     .stream()
                     .filter(conn -> checkTargetConnector(connect, conn))
                     .collect(Collectors.toList());
         }
 
         if (targets.isEmpty()) {
-            getLogger().warning("target is not found (pool: " + from.getPool() + ", name: " + from.getName() + ")");
+            getLogger().warning("target is not found (pool: " + from.getTargetPool() + ", name: " + from.getName() + ")");
             return null;
         }
 

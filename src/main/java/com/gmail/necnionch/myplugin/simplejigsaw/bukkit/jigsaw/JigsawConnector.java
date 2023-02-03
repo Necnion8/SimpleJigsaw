@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNull;
 public class JigsawConnector {
     private final @NotNull JigsawPart jigsawPart;
     private final @NotNull BlockVector3 location;
-    private final @NotNull String pool;
+    private final @NotNull String targetPool;
     private final @NotNull String name;
     private final @NotNull String targetName;
     private final @NotNull String finalBlockState;
@@ -16,14 +16,14 @@ public class JigsawConnector {
 
     JigsawConnector(@NotNull JigsawPart jigsawPart,
                     @NotNull BlockVector3 location,
-                    @NotNull String pool,
+                    @NotNull String targetPool,
                     @NotNull String name,
                     @NotNull String targetName,
                     @NotNull String finalBlockState,
                     @NotNull JointType jointType,
                     @NotNull Orientation orientation) {
         this.jigsawPart = jigsawPart;
-        this.pool = pool;
+        this.targetPool = targetPool;
         this.name = name;
         this.targetName = targetName;
         this.finalBlockState = finalBlockState;
@@ -48,8 +48,13 @@ public class JigsawConnector {
         return location;
     }
 
+    @Deprecated
     public @NotNull String getPool() {
-        return pool;
+        return targetPool;
+    }
+
+    public @NotNull String getTargetPool() {
+        return targetPool;
     }
 
     public @NotNull String getName() {
