@@ -518,7 +518,7 @@ public class StructureBuilder {
 //            return null;
         // 全て重なる場合は、一番重なりが少ない物を選ぶ
         Map.Entry<JigsawConnector, ConflictTestResult> hit = tests.entrySet().stream()
-                .min(Comparator.comparingInt(e -> e.getValue().conflictCount))
+                .min(Comparator.comparingInt(e -> e.getValue().conflictCount))  // TODO: 更に同率があればweight選出する
                 .orElse(null);
         if (hit == null)
             return null;

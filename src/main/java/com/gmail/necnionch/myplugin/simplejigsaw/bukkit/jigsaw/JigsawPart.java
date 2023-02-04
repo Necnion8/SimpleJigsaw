@@ -18,10 +18,7 @@ import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.NamespacedKey;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Logger;
 
 public class JigsawPart {
@@ -48,6 +45,8 @@ public class JigsawPart {
         BlockType blockType = BlockTypes.JIGSAW;
         if (blockType == null)
             return;
+
+        BlockType voidType = Optional.ofNullable(BlockTypes.STRUCTURE_VOID).orElse(null);
 
         connectors.clear();
         filledBlockLocations.clear();
@@ -85,6 +84,9 @@ public class JigsawPart {
 
                     isStructure = finalBlockType != null && finalBlockType.equals(BlockTypes.STRUCTURE_VOID);
                 }
+
+            } else if (entry.baseBlock().getBlockType().equals(voidType)) {
+                isStructure = true;
             }
 
             if (!isStructure)
